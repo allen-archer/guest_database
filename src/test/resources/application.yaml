@@ -1,14 +1,10 @@
 spring:
-  application:
-    name: guest_database
   datasource:
-    url: jdbc:sqlite:./guest_database.db
+    url: jdbc:sqlite:file:testdb?mode=memory&cache=shared
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 1
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
-      ddl-auto: update
-server:
-  port: 8080
+      ddl-auto: create-drop

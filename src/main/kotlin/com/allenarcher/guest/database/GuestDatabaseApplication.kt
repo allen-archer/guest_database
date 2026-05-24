@@ -1,4 +1,4 @@
-package com.allenarcher.guest_database
+package com.allenarcher.guest.database
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
