@@ -1,4 +1,4 @@
-package com.allenarcher.guest.database
+package com.allenarcher.guest.database.models
 
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -24,6 +24,7 @@ class Guest(
 class Stay(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
+    var externalId: Long? = null,
     var checkIn: LocalDate,
     var checkOut: LocalDate,
     @ManyToMany
@@ -41,6 +42,7 @@ class Stay(
 class Invoice(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
+    var externalId: Long? = null,
     @OneToOne
     @JoinColumn(name = "stay_id")
     var stay: Stay,
@@ -49,7 +51,6 @@ class Invoice(
     var items: MutableList<InvoiceItem> = mutableListOf(),
     var stateTax: BigDecimal,
     var countyTax: BigDecimal,
-    var paid: Boolean = false
 )
 
 @Embeddable
@@ -77,4 +78,29 @@ data class Address(
     var state: String,
     var zip: String,
     var addedAt: LocalDate = LocalDate.now()
+)
+
+fun Stay.toResponse() = StayResponse(
+    id = id!!,
+    externalId = externalId,
+    checkIn = checkIn,
+    checkOut = checkOut,
+    guests = guests.map { it.toResponse() },
+    invoice = invoice!!.toResponse()
+)
+
+fun Invoice.toResponse() = InvoiceResponse(
+    id = id!!,
+    externalId = externalId,
+    items = items.map { InvoiceItemResponse(name = it.name, price = it.price) },
+    stateTax = stateTax,
+    countyTax = countyTax,
+)
+
+fun Guest.toResponse() = GuestResponse(
+    id = id!!,
+    name = name,
+    phones = phones.map { PhoneResponse(number = it.number, addedAt = it.addedAt) },
+    emails = emails.map { EmailResponse(address = it.address, addedAt = it.addedAt) },
+    addresses = addresses.map { AddressResponse(street = it.street, city = it.city, state = it.state, zip = it.zip, addedAt = it.addedAt) }
 )

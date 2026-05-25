@@ -1,11 +1,17 @@
-package com.allenarcher.guest.database
+package com.allenarcher.guest.database.models
 
 import java.math.BigDecimal
 import java.time.LocalDate
 
-data class CreateGuestRequest(val name: String)
+data class CreateGuestRequest(
+    val name: String,
+    val phones: List<PhoneRequest> = emptyList(),
+    val emails: List<EmailRequest> = emptyList(),
+    val addresses: List<AddressRequest> = emptyList()
+)
 
 data class CreateStayRequest(
+    val externalId: Long? = null,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val guestIds: List<Long>,
@@ -13,6 +19,7 @@ data class CreateStayRequest(
 )
 
 data class CreateInvoiceRequest(
+    val externalId: Long? = null,
     val items: List<InvoiceItemRequest>,
     val stateTax: BigDecimal,
     val countyTax: BigDecimal
@@ -20,10 +27,28 @@ data class CreateInvoiceRequest(
 
 data class InvoiceItemRequest(val name: String, val price: BigDecimal)
 
-data class GuestResponse(val id: Long, val name: String)
+data class PhoneRequest(val number: String)
+
+data class EmailRequest(val address: String)
+
+data class AddressRequest(
+    val street: String,
+    val city: String,
+    val state: String,
+    val zip: String
+)
+
+data class GuestResponse(
+    val id: Long,
+    val name: String,
+    val phones: List<PhoneResponse>,
+    val emails: List<EmailResponse>,
+    val addresses: List<AddressResponse>
+)
 
 data class StayResponse(
     val id: Long,
+    val externalId: Long?,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val guests: List<GuestResponse>,
@@ -32,10 +57,51 @@ data class StayResponse(
 
 data class InvoiceResponse(
     val id: Long,
+    val externalId: Long?,
     val items: List<InvoiceItemResponse>,
     val stateTax: BigDecimal,
     val countyTax: BigDecimal,
-    val paid: Boolean
 )
 
 data class InvoiceItemResponse(val name: String, val price: BigDecimal)
+
+data class PhoneResponse(val number: String, val addedAt: LocalDate)
+
+data class EmailResponse(val address: String, val addedAt: LocalDate)
+
+data class AddressResponse(
+    val street: String,
+    val city: String,
+    val state: String,
+    val zip: String,
+    val addedAt: LocalDate
+)
+
+fun CreateGuestRequest.toDatabase() = Guest(
+    name = name,
+    phones = phones.map { it.toDatabase() }.toMutableList(),
+    emails = emails.map { it.toDatabase() }.toMutableList(),
+    addresses = addresses.map { it.toDatabase() }.toMutableList()
+)
+
+fun PhoneRequest.toDatabase() = Phone(number = number)
+
+fun EmailRequest.toDatabase() = Email(address = address)
+
+fun AddressRequest.toDatabase() = Address(street = street, city = city, state = state, zip = zip)
+
+fun InvoiceItemRequest.toDatabase() = InvoiceItem(name = name, price = price)
+
+fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
+    externalId = externalId,
+    stay = stay,
+    items = items.map { it.toDatabase() }.toMutableList(),
+    stateTax = stateTax,
+    countyTax = countyTax
+)
+
+fun CreateStayRequest.toDatabase(guests: List<Guest>): Stay {
+    val stay = Stay(externalId = externalId, checkIn = checkIn, checkOut = checkOut, guests = guests.toMutableList())
+    stay.invoice = invoice.toDatabase(stay)
+    return stay
+}

@@ -1,6 +1,11 @@
 package com.allenarcher.guest.database
 
-import org.junit.jupiter.api.Assertions.*
+import com.allenarcher.guest.database.models.*
+import com.allenarcher.guest.database.services.StayService
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,12 +31,16 @@ class StayServiceTests {
     private fun createStayRequest(
         guestIds: List<Long>,
         checkIn: LocalDate,
-        checkOut: LocalDate
+        checkOut: LocalDate,
+        externalId: Long? = null,
+        invoiceExternalId: Long? = null
     ) = CreateStayRequest(
+        externalId = externalId,
         checkIn = checkIn,
         checkOut = checkOut,
         guestIds = guestIds,
         invoice = CreateInvoiceRequest(
+            externalId = invoiceExternalId,
             items = listOf(InvoiceItemRequest("Room", BigDecimal("150.00"))),
             stateTax = BigDecimal("0.06"),
             countyTax = BigDecimal("0.01")
@@ -105,18 +114,6 @@ class StayServiceTests {
     }
 
     @Test
-    fun `createStay invoice is unpaid by default`() {
-        val guest = savedGuest("Alice")
-        val response = stayService.createStay(createStayRequest(
-            guestIds = listOf(guest.id!!),
-            checkIn = LocalDate.of(2026, 6, 1),
-            checkOut = LocalDate.of(2026, 6, 3)
-        ))
-        assertFalse(response.invoice.paid)
-        assertEquals(BigDecimal("150.00"), response.invoice.items.first().price)
-    }
-
-    @Test
     fun `createStay throws when guest id does not exist`() {
         assertThrows(IllegalArgumentException::class.java) {
             stayService.createStay(createStayRequest(
@@ -125,5 +122,51 @@ class StayServiceTests {
                 checkOut = LocalDate.of(2026, 6, 3)
             ))
         }
+    }
+
+    @Test
+    fun `createStay returns externalId`() {
+        val guest = savedGuest("Alice")
+        val response = stayService.createStay(createStayRequest(
+            guestIds = listOf(guest.id!!),
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 3),
+            externalId = 1001L
+        ))
+        assertEquals(1001L, response.externalId)
+    }
+
+    @Test
+    fun `createStay with no externalId returns null externalId`() {
+        val guest = savedGuest("Alice")
+        val response = stayService.createStay(createStayRequest(
+            guestIds = listOf(guest.id!!),
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 3)
+        ))
+        assertNull(response.externalId)
+    }
+
+    @Test
+    fun `createStay returns invoice externalId`() {
+        val guest = savedGuest("Alice")
+        val response = stayService.createStay(createStayRequest(
+            guestIds = listOf(guest.id!!),
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 3),
+            invoiceExternalId = 2001L
+        ))
+        assertEquals(2001L, response.invoice.externalId)
+    }
+
+    @Test
+    fun `createStay with no invoice externalId returns null`() {
+        val guest = savedGuest("Alice")
+        val response = stayService.createStay(createStayRequest(
+            guestIds = listOf(guest.id!!),
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 3)
+        ))
+        assertNull(response.invoice.externalId)
     }
 }
