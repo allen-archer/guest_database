@@ -5,21 +5,21 @@ import java.time.LocalDate
 
 data class CreateGuestRequest(
     val name: String,
+    val externalId: Long,
     val phones: List<PhoneRequest> = emptyList(),
     val emails: List<EmailRequest> = emptyList(),
     val addresses: List<AddressRequest> = emptyList()
 )
 
 data class CreateStayRequest(
-    val externalId: Long? = null,
+    val externalId: Long,
+    val primaryGuestName: String,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
-    val guestIds: List<Long>,
     val invoice: CreateInvoiceRequest
 )
 
 data class CreateInvoiceRequest(
-    val externalId: Long? = null,
     val items: List<InvoiceItemRequest>,
     val stateTax: BigDecimal,
     val countyTax: BigDecimal
@@ -40,6 +40,7 @@ data class AddressRequest(
 
 data class GuestResponse(
     val id: Long,
+    val externalId: Long,
     val name: String,
     val phones: List<PhoneResponse>,
     val emails: List<EmailResponse>,
@@ -48,16 +49,17 @@ data class GuestResponse(
 
 data class StayResponse(
     val id: Long,
-    val externalId: Long?,
+    val externalId: Long,
+    val primaryGuestName: String,
+    val additionalGuestName: String?,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
-    val guests: List<GuestResponse>,
+    val guest: GuestResponse?,
     val invoice: InvoiceResponse
 )
 
 data class InvoiceResponse(
     val id: Long,
-    val externalId: Long?,
     val items: List<InvoiceItemResponse>,
     val stateTax: BigDecimal,
     val countyTax: BigDecimal,
@@ -78,6 +80,7 @@ data class AddressResponse(
 )
 
 fun CreateGuestRequest.toDatabase() = Guest(
+    externalId = externalId,
     name = name,
     phones = phones.map { it.toDatabase() }.toMutableList(),
     emails = emails.map { it.toDatabase() }.toMutableList(),
@@ -93,15 +96,14 @@ fun AddressRequest.toDatabase() = Address(street = street, city = city, state = 
 fun InvoiceItemRequest.toDatabase() = InvoiceItem(name = name, price = price)
 
 fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
-    externalId = externalId,
     stay = stay,
     items = items.map { it.toDatabase() }.toMutableList(),
     stateTax = stateTax,
     countyTax = countyTax
 )
 
-fun CreateStayRequest.toDatabase(guests: List<Guest>): Stay {
-    val stay = Stay(externalId = externalId, checkIn = checkIn, checkOut = checkOut, guests = guests.toMutableList())
+fun CreateStayRequest.toDatabase(): Stay {
+    val stay = Stay(externalId = externalId, primaryGuestName = primaryGuestName, checkIn = checkIn, checkOut = checkOut)
     stay.invoice = invoice.toDatabase(stay)
     return stay
 }

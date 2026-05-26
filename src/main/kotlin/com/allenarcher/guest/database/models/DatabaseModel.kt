@@ -8,6 +8,8 @@ import java.time.LocalDate
 class Guest(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
+    @Column(unique = true)
+    var externalId: Long,
     var name: String,
     @ElementCollection
     @CollectionTable(name = "guest_phones", joinColumns = [JoinColumn(name = "guest_id")])
@@ -24,16 +26,15 @@ class Guest(
 class Stay(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
-    var externalId: Long? = null,
+    @Column(unique = true)
+    var externalId: Long,
+    var primaryGuestName: String,
+    var additionalGuestName: String? = null,
     var checkIn: LocalDate,
     var checkOut: LocalDate,
-    @ManyToMany
-    @JoinTable(
-        name = "stay_guests",
-        joinColumns = [JoinColumn(name = "stay_id")],
-        inverseJoinColumns = [JoinColumn(name = "guest_id")]
-    )
-    var guests: MutableList<Guest> = mutableListOf(),
+    @ManyToOne
+    @JoinColumn(name = "guest_id")
+    var guest: Guest? = null,
     @OneToOne(mappedBy = "stay", cascade = [CascadeType.ALL])
     var invoice: Invoice? = null
 )
@@ -42,7 +43,6 @@ class Stay(
 class Invoice(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
-    var externalId: Long? = null,
     @OneToOne
     @JoinColumn(name = "stay_id")
     var stay: Stay,
@@ -83,15 +83,16 @@ data class Address(
 fun Stay.toResponse() = StayResponse(
     id = id!!,
     externalId = externalId,
+    primaryGuestName = primaryGuestName,
+    additionalGuestName = additionalGuestName,
     checkIn = checkIn,
     checkOut = checkOut,
-    guests = guests.map { it.toResponse() },
+    guest = guest?.toResponse(),
     invoice = invoice!!.toResponse()
 )
 
 fun Invoice.toResponse() = InvoiceResponse(
     id = id!!,
-    externalId = externalId,
     items = items.map { InvoiceItemResponse(name = it.name, price = it.price) },
     stateTax = stateTax,
     countyTax = countyTax,
@@ -99,6 +100,7 @@ fun Invoice.toResponse() = InvoiceResponse(
 
 fun Guest.toResponse() = GuestResponse(
     id = id!!,
+    externalId = externalId,
     name = name,
     phones = phones.map { PhoneResponse(number = it.number, addedAt = it.addedAt) },
     emails = emails.map { EmailResponse(address = it.address, addedAt = it.addedAt) },

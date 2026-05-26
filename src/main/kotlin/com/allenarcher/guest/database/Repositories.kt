@@ -12,4 +12,6 @@ interface StayRepository : JpaRepository<Stay, Long> {
         from: LocalDate,
         to: LocalDate
     ): List<Stay>
+
+    fun findByGuestIsNull(): List<Stay>
 }

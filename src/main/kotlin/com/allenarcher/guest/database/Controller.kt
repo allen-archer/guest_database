@@ -29,6 +29,9 @@ class Controller(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate
     ): List<StayResponse> = stayService.getStaysInRange(from, to)
+
+    @GetMapping("/stays/without-guest")
+    fun getStaysWithoutGuest(): List<StayResponse> = stayService.getStaysWithoutGuest()
 }
 
 @Profile("test")

@@ -22,6 +22,7 @@ class GuestServiceTests {
 
     private fun fullRequest() = CreateGuestRequest(
         name = "Alice",
+        externalId = 5001L,
         phones = listOf(PhoneRequest("555-100-0001")),
         emails = listOf(EmailRequest("alice@example.com")),
         addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701"))
@@ -29,14 +30,14 @@ class GuestServiceTests {
 
     @Test
     fun `createGuest persists and returns guest with id`() {
-        val response = guestService.createGuest(CreateGuestRequest("Alice"))
+        val response = guestService.createGuest(CreateGuestRequest("Alice", 9001L))
         assertNotNull(response.id)
         assertEquals("Alice", response.name)
     }
 
     @Test
     fun `createGuest persists to database`() {
-        val response = guestService.createGuest(CreateGuestRequest("Alice"))
+        val response = guestService.createGuest(CreateGuestRequest("Alice", 9001L))
         val saved = guestRepository.findById(response.id)
         assertEquals("Alice", saved.get().name)
     }
@@ -68,8 +69,14 @@ class GuestServiceTests {
     }
 
     @Test
+    fun `createGuest returns externalId`() {
+        val response = guestService.createGuest(CreateGuestRequest("Alice", 9001L))
+        assertEquals(9001L, response.externalId)
+    }
+
+    @Test
     fun `createGuest with no phones emails or addresses returns empty lists`() {
-        val response = guestService.createGuest(CreateGuestRequest("Alice"))
+        val response = guestService.createGuest(CreateGuestRequest("Alice", 9001L))
         assertEquals(emptyList<PhoneResponse>(), response.phones)
         assertEquals(emptyList<EmailResponse>(), response.emails)
         assertEquals(emptyList<AddressResponse>(), response.addresses)

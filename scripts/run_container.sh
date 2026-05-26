@@ -1,0 +1,1 @@
+docker run --rm -p 8080:8080 -v "$(pwd)/data":/data -e SPRING_PROFILES_ACTIVE=test docker.io/library/guest-database

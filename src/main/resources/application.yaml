@@ -2,7 +2,7 @@ spring:
   application:
     name: guest_database
   datasource:
-    url: jdbc:sqlite:./guest_database.db
+    url: jdbc:sqlite:${DB_PATH:./data/guest_database.db}
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 1
