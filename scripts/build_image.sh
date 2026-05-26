@@ -1,1 +1,1 @@
-docker build -t guest-database .
+docker build -t ghcr.io/allen-archer/guestdatabase .
