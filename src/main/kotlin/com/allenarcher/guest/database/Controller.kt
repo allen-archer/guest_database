@@ -1,6 +1,7 @@
 package com.allenarcher.guest.database
 
 import com.allenarcher.guest.database.models.*
+import com.allenarcher.guest.database.services.BackupService
 import com.allenarcher.guest.database.services.GuestService
 import com.allenarcher.guest.database.services.StayService
 import org.springframework.context.annotation.Profile
@@ -11,7 +12,8 @@ import java.time.LocalDate
 @RestController
 class Controller(
     private val stayService: StayService,
-    private val guestService: GuestService
+    private val guestService: GuestService,
+    private val backupService: BackupService
 ) {
     @PostMapping("/guests")
     fun createGuest(@RequestBody request: CreateGuestRequest): GuestResponse =
@@ -33,6 +35,9 @@ class Controller(
     @PostMapping("/stays/enrich")
     fun enrichStays(@RequestBody requests: List<EnrichStayRequest>): List<StayResponse> =
         stayService.enrichStays(requests)
+
+    @PostMapping("/database/backup")
+    fun backup(): String = backupService.backup()
 }
 
 @Profile("test")
@@ -41,7 +46,7 @@ class TestController(
     private val stayService: StayService,
     private val guestService: GuestService
 ) {
-    @DeleteMapping("/clear")
+    @DeleteMapping("/database/clear")
     fun clear(): String {
         stayService.clear()
         guestService.clear()
