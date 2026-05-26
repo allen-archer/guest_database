@@ -6,6 +6,7 @@ import java.time.LocalDate
 data class CreateGuestRequest(
     val name: String,
     val externalId: Long,
+    val notes: String? = null,
     val phones: List<PhoneRequest> = emptyList(),
     val emails: List<EmailRequest> = emptyList(),
     val addresses: List<AddressRequest> = emptyList()
@@ -14,6 +15,12 @@ data class CreateGuestRequest(
 data class CreateStayRequest(
     val externalId: Long,
     val primaryGuestName: String,
+    val additionalGuestName: String? = null,
+    val specialAccommodations: String? = null,
+    val dietaryRestrictions: String? = null,
+    val arrivalTime: String? = null,
+    val housekeepingNotes: String? = null,
+    val reasonForStay: String? = null,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val invoice: CreateInvoiceRequest
@@ -23,6 +30,30 @@ data class CreateInvoiceRequest(
     val items: List<InvoiceItemRequest>,
     val stateTax: BigDecimal,
     val countyTax: BigDecimal
+)
+
+data class EnrichStayRequest(
+    val stay: EnrichStayData,
+    val guest: EnrichGuestData
+)
+
+data class EnrichStayData(
+    val externalId: Long,
+    val additionalGuestName: String? = null,
+    val specialAccommodations: String? = null,
+    val dietaryRestrictions: String? = null,
+    val arrivalTime: String? = null,
+    val housekeepingNotes: String? = null,
+    val reasonForStay: String? = null
+)
+
+data class EnrichGuestData(
+    val externalId: Long,
+    val name: String,
+    val notes: String? = null,
+    val phones: List<PhoneRequest> = emptyList(),
+    val emails: List<EmailRequest> = emptyList(),
+    val addresses: List<AddressRequest> = emptyList()
 )
 
 data class InvoiceItemRequest(val name: String, val price: BigDecimal)
@@ -42,6 +73,7 @@ data class GuestResponse(
     val id: Long,
     val externalId: Long,
     val name: String,
+    val notes: String?,
     val phones: List<PhoneResponse>,
     val emails: List<EmailResponse>,
     val addresses: List<AddressResponse>
@@ -52,6 +84,11 @@ data class StayResponse(
     val externalId: Long,
     val primaryGuestName: String,
     val additionalGuestName: String?,
+    val specialAccommodations: String?,
+    val dietaryRestrictions: String?,
+    val arrivalTime: String?,
+    val housekeepingNotes: String?,
+    val reasonForStay: String?,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val guest: GuestResponse?,
@@ -79,9 +116,19 @@ data class AddressResponse(
     val addedAt: LocalDate
 )
 
+fun EnrichGuestData.toDatabase() = Guest(
+    externalId = externalId,
+    name = name,
+    notes = notes,
+    phones = phones.map { it.toDatabase() }.toMutableList(),
+    emails = emails.map { it.toDatabase() }.toMutableList(),
+    addresses = addresses.map { it.toDatabase() }.toMutableList()
+)
+
 fun CreateGuestRequest.toDatabase() = Guest(
     externalId = externalId,
     name = name,
+    notes = notes,
     phones = phones.map { it.toDatabase() }.toMutableList(),
     emails = emails.map { it.toDatabase() }.toMutableList(),
     addresses = addresses.map { it.toDatabase() }.toMutableList()
@@ -103,7 +150,18 @@ fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
 )
 
 fun CreateStayRequest.toDatabase(): Stay {
-    val stay = Stay(externalId = externalId, primaryGuestName = primaryGuestName, checkIn = checkIn, checkOut = checkOut)
+    val stay = Stay(
+        externalId = externalId,
+        primaryGuestName = primaryGuestName,
+        additionalGuestName = additionalGuestName,
+        specialAccommodations = specialAccommodations,
+        dietaryRestrictions = dietaryRestrictions,
+        arrivalTime = arrivalTime,
+        housekeepingNotes = housekeepingNotes,
+        reasonForStay = reasonForStay,
+        checkIn = checkIn,
+        checkOut = checkOut
+    )
     stay.invoice = invoice.toDatabase(stay)
     return stay
 }

@@ -5,7 +5,9 @@ import com.allenarcher.guest.database.models.Stay
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 
-interface GuestRepository : JpaRepository<Guest, Long>
+interface GuestRepository : JpaRepository<Guest, Long> {
+    fun findByExternalId(externalId: Long): Guest?
+}
 
 interface StayRepository : JpaRepository<Stay, Long> {
     fun findByCheckInGreaterThanEqualAndCheckOutLessThanEqual(
@@ -13,5 +15,6 @@ interface StayRepository : JpaRepository<Stay, Long> {
         to: LocalDate
     ): List<Stay>
 
+    fun findByExternalId(externalId: Long): Stay?
     fun findByGuestIsNull(): List<Stay>
 }

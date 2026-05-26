@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.math.BigDecimal
@@ -16,10 +18,12 @@ class StayServiceTests {
 
     @Autowired lateinit var stayService: StayService
     @Autowired lateinit var stayRepository: StayRepository
+    @Autowired lateinit var guestRepository: GuestRepository
 
     @BeforeEach
     fun setUp() {
         stayRepository.deleteAll()
+        guestRepository.deleteAll()
     }
 
     private fun createStayRequest(
@@ -104,6 +108,113 @@ class StayServiceTests {
             checkOut = LocalDate.of(2026, 6, 3)
         ))
         assertEquals(1001L, response.externalId)
+    }
+
+    private fun enrichRequest(
+        stayExternalId: Long = 1001L,
+        guestExternalId: Long = 5001L
+    ) = EnrichStayRequest(
+        stay = EnrichStayData(
+            externalId = stayExternalId,
+            additionalGuestName = "Bob Smith",
+            specialAccommodations = "Ground floor",
+            dietaryRestrictions = "Gluten free",
+            arrivalTime = "3:00 PM",
+            housekeepingNotes = "No disturbance",
+            reasonForStay = "Anniversary"
+        ),
+        guest = EnrichGuestData(
+            externalId = guestExternalId,
+            name = "Alice Smith",
+            notes = "Prefers extra towels",
+            phones = listOf(PhoneRequest("555-100-0001")),
+            emails = listOf(EmailRequest("alice@example.com")),
+            addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701"))
+        )
+    )
+
+    @Test
+    fun `enrichStays creates guest and links to stay`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        val results = stayService.enrichStays(listOf(enrichRequest()))
+        assertEquals(1, results.size)
+        assertNotNull(results[0].guest)
+        assertEquals(5001L, results[0].guest!!.externalId)
+        assertEquals("Alice Smith", results[0].guest!!.name)
+    }
+
+    @Test
+    fun `enrichStays updates stay fields`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        val result = stayService.enrichStays(listOf(enrichRequest()))[0]
+        assertEquals("Bob Smith", result.additionalGuestName)
+        assertEquals("Ground floor", result.specialAccommodations)
+        assertEquals("Gluten free", result.dietaryRestrictions)
+        assertEquals("3:00 PM", result.arrivalTime)
+        assertEquals("No disturbance", result.housekeepingNotes)
+        assertEquals("Anniversary", result.reasonForStay)
+    }
+
+    @Test
+    fun `enrichStays updates existing guest name and notes`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest()))
+        val updated = enrichRequest().copy(
+            guest = enrichRequest().guest.copy(name = "Alice Updated", notes = "New note")
+        )
+        val result = stayService.enrichStays(listOf(updated))[0]
+        assertEquals("Alice Updated", result.guest!!.name)
+        assertEquals("New note", result.guest.notes)
+        assertEquals(1, guestRepository.count())
+    }
+
+    @Test
+    fun `enrichStays accumulates new phones emails and addresses on existing guest`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest()))
+        val updated = enrichRequest().copy(
+            guest = enrichRequest().guest.copy(
+                phones = listOf(PhoneRequest("555-100-0001"), PhoneRequest("555-999-9999")),
+                emails = listOf(EmailRequest("alice@example.com"), EmailRequest("alice2@example.com")),
+                addresses = listOf(
+                    AddressRequest("123 Main St", "Springfield", "IL", "62701"),
+                    AddressRequest("456 Oak Ave", "Springfield", "IL", "62702")
+                )
+            )
+        )
+        val result = stayService.enrichStays(listOf(updated))[0]
+        assertEquals(2, result.guest!!.phones.size)
+        assertEquals(2, result.guest.emails.size)
+        assertEquals(2, result.guest.addresses.size)
+    }
+
+    @Test
+    fun `enrichStays does not duplicate existing phones emails or addresses`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest()))
+        val result = stayService.enrichStays(listOf(enrichRequest()))[0]
+        assertEquals(1, result.guest!!.phones.size)
+        assertEquals(1, result.guest.emails.size)
+        assertEquals(1, result.guest.addresses.size)
+    }
+
+    @Test
+    fun `enrichStays handles batch`() {
+        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5)))
+        val results = stayService.enrichStays(listOf(
+            enrichRequest(stayExternalId = 1001L, guestExternalId = 5001L),
+            enrichRequest(stayExternalId = 1002L, guestExternalId = 5002L)
+        ))
+        assertEquals(2, results.size)
+        assertEquals(2, guestRepository.count())
+    }
+
+    @Test
+    fun `enrichStays throws when stay not found`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            stayService.enrichStays(listOf(enrichRequest(stayExternalId = 9999L)))
+        }
     }
 
     @Test

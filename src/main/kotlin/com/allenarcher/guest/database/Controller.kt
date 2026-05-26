@@ -1,9 +1,6 @@
 package com.allenarcher.guest.database
 
-import com.allenarcher.guest.database.models.CreateGuestRequest
-import com.allenarcher.guest.database.models.CreateStayRequest
-import com.allenarcher.guest.database.models.GuestResponse
-import com.allenarcher.guest.database.models.StayResponse
+import com.allenarcher.guest.database.models.*
 import com.allenarcher.guest.database.services.GuestService
 import com.allenarcher.guest.database.services.StayService
 import org.springframework.context.annotation.Profile
@@ -32,6 +29,10 @@ class Controller(
 
     @GetMapping("/stays/without-guest")
     fun getStaysWithoutGuest(): List<StayResponse> = stayService.getStaysWithoutGuest()
+
+    @PostMapping("/stays/enrich")
+    fun enrichStays(@RequestBody requests: List<EnrichStayRequest>): List<StayResponse> =
+        stayService.enrichStays(requests)
 }
 
 @Profile("test")

@@ -15,12 +15,26 @@ curl -X POST http://localhost:8080/stays \
     }
   }'
 
-curl -X POST http://localhost:8080/guests \
+curl -X POST http://localhost:8080/stays/enrich \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice Smith",
-    "externalId": 5001,
-    "phones": [{"number": "555-100-0001"}],
-    "emails": [{"address": "alice@example.com"}],
-    "addresses": [{"street": "123 Main St", "city": "Springfield", "state": "IL", "zip": "62701"}]
-  }'
+  -d '[
+    {
+      "stay": {
+        "externalId": 1001,
+        "additionalGuestName": "Bob Smith",
+        "specialAccommodations": "Ground floor room requested",
+        "dietaryRestrictions": "Gluten free",
+        "arrivalTime": "3:00 PM",
+        "housekeepingNotes": "Do not disturb before 9am",
+        "reasonForStay": "Anniversary"
+      },
+      "guest": {
+        "externalId": 5001,
+        "name": "Alice Smith",
+        "notes": "Prefers extra towels",
+        "phones": [{"number": "555-100-0001"}],
+        "emails": [{"address": "alice@example.com"}],
+        "addresses": [{"street": "123 Main St", "city": "Springfield", "state": "IL", "zip": "62701"}]
+      }
+    }
+  ]'

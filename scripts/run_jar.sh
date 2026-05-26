@@ -1,0 +1,1 @@
+$(dirname "$0")/../gradlew bootRun --args='--spring.profiles.active=test'
