@@ -19,7 +19,7 @@ Separately, I have a web scraper that gets extra data and calls `GET /stays/with
 
 **With Gradle:**
 ```bash
-./gradlew bootJar
+./scripts/build_jar.sh
 ```
 
 **With Docker:**
@@ -33,6 +33,8 @@ Separately, I have a web scraper that gets extra data and calls `GET /stays/with
 ```bash
 ./scripts/run_jar.sh
 ```
+
+Note: _you do not need to build the image before running the container._ It is publicly available from Github's registry.
 
 **With Docker:**
 ```bash
@@ -53,14 +55,22 @@ The `test` Spring profile enables the `DELETE /clear` endpoint for resetting the
 
 ## Scripts
 
-The `scripts/` directory contains curl commands for exercising the API:
+The `scripts/` directory contains scripts for building, running, and exercising the API:
 
+**Build**
+- `build_jar.sh` — build the jar via Gradle
+- `build_image.sh` — build the Docker image
+
+**Run**
 - `run_jar.sh` — start the app via Gradle
 - `run_container.sh` — start the app via Docker
+
+**API**
 - `create_stay.sh` — create a stay stub then enrich it
 - `create_stay_without_guest.sh` — create a stay stub with no guest (for testing the scraper queue)
-- `get_stays.sh` — get all stays
+- `get_stays.sh` — get all stays within a date range
 - `get_stays_without_guest.sh` — get all unenriched stays
+- `clear.sh` — clear all data (requires `test` profile)
 
 ## Tech
 
