@@ -95,36 +95,3 @@ data class Address(
         street == other.street && city == other.city && state == other.state && zip == other.zip
     override fun hashCode() = arrayOf(street, city, state, zip).contentHashCode()
 }
-
-fun Stay.toResponse() = StayResponse(
-    id = id!!,
-    externalId = externalId,
-    primaryGuestName = primaryGuestName,
-    additionalGuestName = additionalGuestName,
-    specialAccommodations = specialAccommodations,
-    dietaryRestrictions = dietaryRestrictions,
-    arrivalTime = arrivalTime,
-    housekeepingNotes = housekeepingNotes,
-    reasonForStay = reasonForStay,
-    checkIn = checkIn,
-    checkOut = checkOut,
-    guest = guest?.toResponse(),
-    invoice = invoice!!.toResponse()
-)
-
-fun Invoice.toResponse() = InvoiceResponse(
-    id = id!!,
-    items = items.map { InvoiceItemResponse(name = it.name, price = it.price) },
-    stateTax = stateTax,
-    countyTax = countyTax,
-)
-
-fun Guest.toResponse() = GuestResponse(
-    id = id!!,
-    externalId = externalId,
-    name = name,
-    notes = notes,
-    phones = phones.map { PhoneResponse(number = it.number, addedAt = it.addedAt) },
-    emails = emails.map { EmailResponse(address = it.address, addedAt = it.addedAt) },
-    addresses = addresses.map { AddressResponse(street = it.street, city = it.city, state = it.state, zip = it.zip, addedAt = it.addedAt) }
-)

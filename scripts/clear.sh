@@ -1,1 +1,1 @@
-curl -X DELETE "http://localhost:8080/clear"
+curl -X DELETE "http://localhost:8080/database/clear"
