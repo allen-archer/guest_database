@@ -4,6 +4,7 @@ fun Stay.toResponse() = StayResponse(
     id = id!!,
     externalId = externalId,
     primaryGuestName = primaryGuestName,
+    status = status,
     additionalGuestName = additionalGuestName,
     specialAccommodations = specialAccommodations,
     dietaryRestrictions = dietaryRestrictions,
@@ -16,7 +17,7 @@ fun Stay.toResponse() = StayResponse(
     invoice = invoice!!.toResponse()
 )
 
-fun InvoiceItem.toResponse() = InvoiceItemResponse(name = name, price = price)
+fun InvoiceItem.toResponse() = InvoiceItemResponse(type = type, name = name, quantity = quantity, amount = amount, date = date)
 
 fun Invoice.toResponse() = InvoiceResponse(
     id = id!!,
@@ -25,12 +26,18 @@ fun Invoice.toResponse() = InvoiceResponse(
     countyTax = countyTax,
 )
 
+fun Phone.toResponse() = PhoneResponse(number = number, addedAt = addedAt)
+
+fun Email.toResponse() = EmailResponse(address = address, addedAt = addedAt)
+
+fun Address.toResponse() = AddressResponse(street = street, city = city, state = state, zip = zip, country = country, addedAt = addedAt)
+
 fun Guest.toResponse() = GuestResponse(
     id = id!!,
     externalId = externalId,
     name = name,
     notes = notes,
-    phones = phones.map { PhoneResponse(number = it.number, addedAt = it.addedAt) },
-    emails = emails.map { EmailResponse(address = it.address, addedAt = it.addedAt) },
-    addresses = addresses.map { AddressResponse(street = it.street, city = it.city, state = it.state, zip = it.zip, addedAt = it.addedAt) }
+    phones = phones.map { it.toResponse() },
+    emails = emails.map { it.toResponse() },
+    addresses = addresses.map { it.toResponse() }
 )

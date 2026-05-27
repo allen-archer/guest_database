@@ -22,9 +22,9 @@ fun PhoneRequest.toDatabase() = Phone(number = number)
 
 fun EmailRequest.toDatabase() = Email(address = address)
 
-fun AddressRequest.toDatabase() = Address(street = street, city = city, state = state, zip = zip)
+fun AddressRequest.toDatabase() = Address(street = street, city = city, state = state, zip = zip, country = country)
 
-fun InvoiceItemRequest.toDatabase() = InvoiceItem(name = name, price = price)
+fun InvoiceItemRequest.toDatabase() = InvoiceItem(type = type, name = name, quantity = quantity, amount = amount, date = date)
 
 fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
     stay = stay,
@@ -37,6 +37,7 @@ fun CreateStayRequest.toDatabase(): Stay {
     val stay = Stay(
         externalId = externalId,
         primaryGuestName = primaryGuestName,
+        status = status,
         additionalGuestName = additionalGuestName,
         specialAccommodations = specialAccommodations,
         dietaryRestrictions = dietaryRestrictions,

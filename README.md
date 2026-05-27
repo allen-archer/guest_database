@@ -51,7 +51,10 @@ The `test` Spring profile enables the `DELETE /database/clear` endpoint for rese
 | `GET` | `/stays?from=&to=` | Get stays within a date range |
 | `GET` | `/stays/without-guest` | Get stays not yet enriched by the scraper |
 | `POST` | `/stays/enrich` | Enrich one or more stays with guest and stay details |
+| `POST` | `/stays/{externalId}/cancel` | Cancel a stay |
 | `POST` | `/guests` | Create a guest manually |
+| `GET` | `/guests/{externalId}/history` | Get a guest's stay count and last stay details |
+| `POST` | `/database/backup` | Back up the database |
 
 ## Scripts
 
@@ -70,6 +73,8 @@ The `scripts/` directory contains scripts for building, running, and exercising 
 - `create_stay_without_guest.sh` — create a stay stub with no guest (for testing the scraper queue)
 - `get_stays.sh` — get all stays within a date range
 - `get_stays_without_guest.sh` — get all unenriched stays
+- `cancel_stay.sh` — cancel a stay
+- `get_guest_history.sh` — get a guest's stay count and last stay details
 
 **Database**
 - `backup.sh` — does a hot backup of the database to the same directory as the database

@@ -19,6 +19,10 @@ class Controller(
     fun createGuest(@RequestBody request: CreateGuestRequest): GuestResponse =
         guestService.createGuest(request)
 
+    @GetMapping("/guests/{externalId}/history")
+    fun getGuestHistory(@PathVariable externalId: Long): GuestHistoryResponse =
+        guestService.getGuestHistory(externalId)
+
     @PostMapping("/stays")
     fun createStay(@RequestBody request: CreateStayRequest): StayResponse =
         stayService.createStay(request)
@@ -35,6 +39,10 @@ class Controller(
     @PostMapping("/stays/enrich")
     fun enrichStays(@RequestBody requests: List<EnrichStayRequest>): List<StayResponse> =
         stayService.enrichStays(requests)
+
+    @PostMapping("/stays/{externalId}/cancel")
+    fun cancelStay(@PathVariable externalId: Long): StayResponse =
+        stayService.cancelStay(externalId)
 
     @PostMapping("/database/backup")
     fun backup(): String = backupService.backup()

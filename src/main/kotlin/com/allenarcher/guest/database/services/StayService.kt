@@ -54,6 +54,14 @@ class StayService(
             stayRepository.save(stay).toResponse()
         }
 
+    @Transactional
+    fun cancelStay(externalId: Long): StayResponse {
+        val stay = stayRepository.findByExternalId(externalId)
+            ?: throw IllegalArgumentException("Stay not found: externalId=$externalId")
+        stay.status = StayStatus.CANCELED
+        return stayRepository.save(stay).toResponse()
+    }
+
     fun clear() {
         stayRepository.deleteAll()
     }
