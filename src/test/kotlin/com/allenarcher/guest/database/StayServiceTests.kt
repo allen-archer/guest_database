@@ -37,7 +37,7 @@ class StayServiceTests {
         checkIn = checkIn,
         checkOut = checkOut,
         invoice = CreateInvoiceRequest(
-            items = listOf(InvoiceItemRequest("Room", BigDecimal("150.00"))),
+            items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
             stateTax = BigDecimal("0.06"),
             countyTax = BigDecimal("0.01")
         )
@@ -129,7 +129,7 @@ class StayServiceTests {
             notes = "Prefers extra towels",
             phones = listOf(PhoneRequest("555-100-0001")),
             emails = listOf(EmailRequest("alice@example.com")),
-            addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701"))
+            addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701", "US"))
         )
     )
 
@@ -177,8 +177,8 @@ class StayServiceTests {
                 phones = listOf(PhoneRequest("555-100-0001"), PhoneRequest("555-999-9999")),
                 emails = listOf(EmailRequest("alice@example.com"), EmailRequest("alice2@example.com")),
                 addresses = listOf(
-                    AddressRequest("123 Main St", "Springfield", "IL", "62701"),
-                    AddressRequest("456 Oak Ave", "Springfield", "IL", "62702")
+                    AddressRequest("123 Main St", "Springfield", "IL", "62701", "US"),
+                    AddressRequest("456 Oak Ave", "Springfield", "IL", "62702", "US")
                 )
             )
         )
@@ -214,6 +214,20 @@ class StayServiceTests {
     fun `enrichStays throws when stay not found`() {
         assertThrows(IllegalArgumentException::class.java) {
             stayService.enrichStays(listOf(enrichRequest(stayExternalId = 9999L)))
+        }
+    }
+
+    @Test
+    fun `cancelStay sets status to CANCELED`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        val result = stayService.cancelStay(1001L)
+        assertEquals(StayStatus.CANCELED, result.status)
+    }
+
+    @Test
+    fun `cancelStay throws when stay not found`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            stayService.cancelStay(9999L)
         }
     }
 

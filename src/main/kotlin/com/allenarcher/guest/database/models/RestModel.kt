@@ -15,6 +15,7 @@ data class CreateGuestRequest(
 data class CreateStayRequest(
     val externalId: Long,
     val primaryGuestName: String,
+    val status: StayStatus = StayStatus.SCHEDULED,
     val additionalGuestName: String? = null,
     val specialAccommodations: String? = null,
     val dietaryRestrictions: String? = null,
@@ -56,7 +57,7 @@ data class EnrichGuestData(
     val addresses: List<AddressRequest> = emptyList()
 )
 
-data class InvoiceItemRequest(val name: String, val price: BigDecimal)
+data class InvoiceItemRequest(val type: String, val name: String?, val quantity: Int, val amount: BigDecimal, val date: LocalDate)
 
 data class PhoneRequest(val number: String)
 
@@ -66,7 +67,8 @@ data class AddressRequest(
     val street: String,
     val city: String,
     val state: String,
-    val zip: String
+    val zip: String,
+    val country: String
 )
 
 data class GuestResponse(
@@ -79,10 +81,22 @@ data class GuestResponse(
     val addresses: List<AddressResponse>
 )
 
+data class GuestHistoryResponse(
+    val previousStayCount: Int,
+    val lastStay: LastStayResponse?
+)
+
+data class LastStayResponse(
+    val room: String?,
+    val checkIn: LocalDate,
+    val checkOut: LocalDate
+)
+
 data class StayResponse(
     val id: Long,
     val externalId: Long,
     val primaryGuestName: String,
+    val status: StayStatus,
     val additionalGuestName: String?,
     val specialAccommodations: String?,
     val dietaryRestrictions: String?,
@@ -102,7 +116,7 @@ data class InvoiceResponse(
     val countyTax: BigDecimal,
 )
 
-data class InvoiceItemResponse(val name: String, val price: BigDecimal)
+data class InvoiceItemResponse(val type: String, val name: String?, val quantity: Int, val amount: BigDecimal, val date: LocalDate)
 
 data class PhoneResponse(val number: String, val addedAt: LocalDate)
 
@@ -113,5 +127,6 @@ data class AddressResponse(
     val city: String,
     val state: String,
     val zip: String,
+    val country: String,
     val addedAt: LocalDate
 )

@@ -4,6 +4,8 @@ import jakarta.persistence.*
 import java.math.BigDecimal
 import java.time.LocalDate
 
+enum class StayStatus { SCHEDULED, CANCELED }
+
 @Entity
 class Guest(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +32,8 @@ class Stay(
     @Column(unique = true)
     var externalId: Long,
     var primaryGuestName: String,
+    @Enumerated(EnumType.STRING)
+    var status: StayStatus = StayStatus.SCHEDULED,
     var additionalGuestName: String? = null,
     var specialAccommodations: String? = null,
     var dietaryRestrictions: String? = null,
@@ -61,8 +65,11 @@ class Invoice(
 
 @Embeddable
 data class InvoiceItem(
-    var name: String,
-    var price: BigDecimal
+    var type: String,
+    var name: String?,
+    var quantity: Int,
+    var amount: BigDecimal,
+    var date: LocalDate
 )
 
 @Embeddable
@@ -89,9 +96,10 @@ data class Address(
     var city: String,
     var state: String,
     var zip: String,
+    var country: String,
     var addedAt: LocalDate = LocalDate.now()
 ) {
     override fun equals(other: Any?) = other is Address &&
-        street == other.street && city == other.city && state == other.state && zip == other.zip
-    override fun hashCode() = arrayOf(street, city, state, zip).contentHashCode()
+        street == other.street && city == other.city && state == other.state && zip == other.zip && country == other.country
+    override fun hashCode() = arrayOf(street, city, state, zip, country).contentHashCode()
 }

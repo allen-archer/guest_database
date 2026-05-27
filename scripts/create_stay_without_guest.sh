@@ -7,8 +7,8 @@ curl -X POST http://localhost:8080/stays \
     "checkOut": "2026-07-05",
     "invoice": {
       "items": [
-        {"name": "Room", "price": "150.69"},
-        {"name": "Parking", "price": "20.42"}
+        {"type": "Room", "name": "Jade Vine Suite", "quantity": 1, "amount": "150.69", "date": "2026-07-01"},
+        {"type": "Mugs", "quantity": 1, "amount": "20.42", "date": "2026-07-01"}
       ],
       "stateTax": "0.06",
       "countyTax": "0.01"

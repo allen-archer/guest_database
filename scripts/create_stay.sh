@@ -7,8 +7,8 @@ curl -X POST http://localhost:8080/stays \
     "checkOut": "2026-06-05",
     "invoice": {
       "items": [
-        {"name": "Room", "price": "150.69"},
-        {"name": "Parking", "price": "20.42"}
+        {"type": "Room", "name": "Jade Vine Suite", "quantity": 1, "amount": "150.69", "date": "2026-06-01"},
+        {"type": "Mugs", "quantity": 1, "amount": "20.42", "date": "2026-06-01"}
       ],
       "stateTax": "0.06",
       "countyTax": "0.01"
@@ -34,7 +34,7 @@ curl -X POST http://localhost:8080/stays/enrich \
         "notes": "Prefers extra towels",
         "phones": [{"number": "555-100-0001"}],
         "emails": [{"address": "alice@example.com"}],
-        "addresses": [{"street": "123 Main St", "city": "Springfield", "state": "IL", "zip": "62701"}]
+        "addresses": [{"street": "123 Main St", "city": "Springfield", "state": "IL", "zip": "62701", "country": "US"}]
       }
     }
   ]'
