@@ -18,7 +18,7 @@ fun CreateGuestRequest.toDatabase() = Guest(
     addresses = addresses.map { it.toDatabase() }.toMutableList()
 )
 
-fun PhoneRequest.toDatabase() = Phone(number = number)
+fun PhoneRequest.toDatabase() = Phone(number = number.replace(Regex("[^0-9]"), ""))
 
 fun EmailRequest.toDatabase() = Email(address = address)
 
