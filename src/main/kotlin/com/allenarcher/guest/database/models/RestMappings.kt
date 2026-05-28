@@ -3,6 +3,7 @@ package com.allenarcher.guest.database.models
 fun Stay.toResponse() = StayResponse(
     id = id!!,
     externalId = externalId,
+    confirmationCode = confirmationCode,
     primaryGuestName = primaryGuestName,
     status = status,
     additionalGuestName = additionalGuestName,

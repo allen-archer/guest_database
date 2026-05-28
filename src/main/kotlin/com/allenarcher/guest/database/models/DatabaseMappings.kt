@@ -36,6 +36,7 @@ fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
 fun CreateStayRequest.toDatabase(): Stay {
     val stay = Stay(
         externalId = externalId,
+        confirmationCode = confirmationCode,
         primaryGuestName = primaryGuestName,
         status = status,
         additionalGuestName = additionalGuestName,

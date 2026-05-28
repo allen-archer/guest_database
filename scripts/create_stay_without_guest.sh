@@ -2,6 +2,7 @@ curl -X POST http://localhost:8080/stays \
   -H "Content-Type: application/json" \
   -d '{
     "externalId": 1002,
+    "confirmationCode": "DEF456",
     "primaryGuestName": "Bob Jones",
     "checkIn": "2026-07-01",
     "checkOut": "2026-07-05",

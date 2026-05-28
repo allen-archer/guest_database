@@ -27,9 +27,10 @@ class GuestServiceTests {
         guestRepository.deleteAll()
     }
 
-    private fun createEnrichedStay(stayExternalId: Long, guestExternalId: Long, checkIn: LocalDate, checkOut: LocalDate, room: String, status: StayStatus = StayStatus.SCHEDULED) {
+    private fun createEnrichedStay(stayExternalId: Long, guestExternalId: Long, checkIn: LocalDate, checkOut: LocalDate, room: String, status: StayStatus = StayStatus.SCHEDULED, confirmationCode: String? = null) {
         stayService.createStay(CreateStayRequest(
             externalId = stayExternalId,
+            confirmationCode = confirmationCode,
             primaryGuestName = "Alice Smith",
             status = status,
             checkIn = checkIn,
