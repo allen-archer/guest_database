@@ -73,7 +73,7 @@ class GuestServiceTests {
     fun `createGuest returns phones`() {
         val response = guestService.createGuest(fullRequest())
         assertEquals(1, response.phones.size)
-        assertEquals("555-100-0001", response.phones[0].number)
+        assertEquals("5551000001", response.phones[0].number)
     }
 
     @Test
