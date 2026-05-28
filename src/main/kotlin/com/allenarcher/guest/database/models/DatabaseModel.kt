@@ -31,6 +31,8 @@ class Stay(
     var id: Long? = null,
     @Column(unique = true)
     var externalId: Long,
+    @Column(unique = true)
+    var confirmationCode: String?,
     var primaryGuestName: String,
     @Enumerated(EnumType.STRING)
     var status: StayStatus = StayStatus.SCHEDULED,

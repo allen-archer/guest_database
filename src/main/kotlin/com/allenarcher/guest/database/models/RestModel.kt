@@ -14,6 +14,7 @@ data class CreateGuestRequest(
 
 data class CreateStayRequest(
     val externalId: Long,
+    val confirmationCode: String?,
     val primaryGuestName: String,
     val status: StayStatus = StayStatus.SCHEDULED,
     val additionalGuestName: String? = null,
@@ -95,6 +96,7 @@ data class LastStayResponse(
 data class StayResponse(
     val id: Long,
     val externalId: Long,
+    val confirmationCode: String?,
     val primaryGuestName: String,
     val status: StayStatus,
     val additionalGuestName: String?,

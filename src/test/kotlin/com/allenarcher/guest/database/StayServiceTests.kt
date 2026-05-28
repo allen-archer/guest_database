@@ -29,10 +29,12 @@ class StayServiceTests {
     private fun createStayRequest(
         externalId: Long = 1001L,
         primaryGuestName: String = "Alice",
+        confirmationCode: String? = null,
         checkIn: LocalDate,
         checkOut: LocalDate,
     ) = CreateStayRequest(
         externalId = externalId,
+        confirmationCode = confirmationCode,
         primaryGuestName = primaryGuestName,
         checkIn = checkIn,
         checkOut = checkOut,
