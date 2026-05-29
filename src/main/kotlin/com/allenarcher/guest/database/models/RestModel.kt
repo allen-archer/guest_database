@@ -82,6 +82,24 @@ data class GuestResponse(
     val addresses: List<AddressResponse>
 )
 
+data class StayBriefingResponse(
+    val primaryGuestName: String,
+    val additionalGuestName: String?,
+    val specialAccommodations: String?,
+    val dietaryRestrictions: String?,
+    val arrivalTime: String?,
+    val housekeepingNotes: String?,
+    val reasonForStay: String?,
+    val checkIn: LocalDate,
+    val checkOut: LocalDate,
+    val nights: Long,
+    val room: String?,
+    val guestNotes: String?,
+    val phones: List<String>,
+    val previousStayCount: Int,
+    val lastStay: LastStayResponse?
+)
+
 data class GuestHistoryResponse(
     val previousStayCount: Int,
     val lastStay: LastStayResponse?

@@ -16,6 +16,12 @@ interface StayRepository : JpaRepository<Stay, Long> {
         to: LocalDate
     ): List<Stay>
 
+    fun findByCheckInGreaterThanEqualAndCheckOutLessThanEqualAndStatus(
+        from: LocalDate,
+        to: LocalDate,
+        status: StayStatus
+    ): List<Stay>
+
     fun findByExternalId(externalId: Long): Stay?
     fun findByGuestIsNull(): List<Stay>
     fun findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guestExternalId: Long, status: StayStatus): List<Stay>

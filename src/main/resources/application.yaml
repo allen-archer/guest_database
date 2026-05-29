@@ -12,3 +12,6 @@ spring:
       ddl-auto: update
 server:
   port: 8080
+logging:
+  level:
+    org.hibernate.orm.jdbc.error: ERROR

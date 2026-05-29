@@ -22,6 +22,17 @@ class StayService(
             .map { it.toResponse() }
 
     @Transactional(readOnly = true)
+    fun getStaysBriefing(from: LocalDate, to: LocalDate): List<StayBriefingResponse> =
+        stayRepository.findByCheckInGreaterThanEqualAndCheckOutLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
+            .map { stay ->
+                val previousStays = stay.guest?.let { guest ->
+                    stayRepository.findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED)
+                        .filter { it.id != stay.id }
+                } ?: emptyList()
+                stay.toBriefingResponse(previousStays)
+            }
+
+    @Transactional(readOnly = true)
     fun getStaysWithoutGuest(): List<StayResponse> =
         stayRepository.findByGuestIsNull().map { it.toResponse() }
 

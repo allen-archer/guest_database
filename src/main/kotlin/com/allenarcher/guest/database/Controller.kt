@@ -33,6 +33,12 @@ class Controller(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate
     ): List<StayResponse> = stayService.getStaysInRange(from, to)
 
+    @GetMapping("/stays/briefing")
+    fun getStaysBriefing(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) to: LocalDate
+    ): List<StayBriefingResponse> = stayService.getStaysBriefing(from, to)
+
     @GetMapping("/stays/without-guest")
     fun getStaysWithoutGuest(): List<StayResponse> = stayService.getStaysWithoutGuest()
 
