@@ -3,6 +3,7 @@ package com.allenarcher.guest.database
 import com.allenarcher.guest.database.models.*
 import com.allenarcher.guest.database.services.StayService
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -231,6 +232,65 @@ class StayServiceTests {
         assertThrows(IllegalArgumentException::class.java) {
             stayService.cancelStay(9999L)
         }
+    }
+
+    @Test
+    fun `getStaysBriefing returns scheduled stays in range`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        assertEquals(1, results.size)
+    }
+
+    @Test
+    fun `getStaysBriefing excludes canceled stays`() {
+        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5)))
+        stayService.cancelStay(1002L)
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        assertEquals(1, results.size)
+    }
+
+    @Test
+    fun `getStaysBriefing excludes stays outside range`() {
+        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2025, 6, 1), checkOut = LocalDate.of(2025, 6, 5)))
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        assertEquals(1, results.size)
+    }
+
+    @Test
+    fun `getStaysBriefing returns correct fields`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest()))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals("Alice", result.primaryGuestName)
+        assertEquals(LocalDate.of(2026, 6, 1), result.checkIn)
+        assertEquals(LocalDate.of(2026, 6, 5), result.checkOut)
+        assertEquals(4L, result.nights)
+        assertEquals("Jade Vine Suite", result.room)
+        assertEquals("Prefers extra towels", result.guestNotes)
+        assertEquals(listOf("5551000001"), result.phones)
+    }
+
+    @Test
+    fun `getStaysBriefing returns zero previousStayCount for first time guest`() {
+        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest()))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(0, result.previousStayCount)
+        assertNull(result.lastStay)
+    }
+
+    @Test
+    fun `getStaysBriefing returns correct history for returning guest`() {
+        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 3)))
+        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.enrichStays(listOf(enrichRequest(stayExternalId = 1001L, guestExternalId = 5001L)))
+        stayService.enrichStays(listOf(enrichRequest(stayExternalId = 1002L, guestExternalId = 5001L)))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(1, result.previousStayCount)
+        assertEquals("Jade Vine Suite", result.lastStay?.room)
+        assertEquals(LocalDate.of(2025, 1, 1), result.lastStay?.checkIn)
     }
 
     @Test
