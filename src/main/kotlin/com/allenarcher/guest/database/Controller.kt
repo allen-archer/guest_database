@@ -9,7 +9,6 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
 
-@CrossOrigin
 @RestController
 class Controller(
     private val stayService: StayService,

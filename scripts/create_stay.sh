@@ -1,4 +1,4 @@
-curl -X POST http://localhost:8080/stays/upsert \
+curl -u admin:changeme -X POST http://localhost:8080/stays/upsert \
   -H "Content-Type: application/json" \
   -d '[
     {

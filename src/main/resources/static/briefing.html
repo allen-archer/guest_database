@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Briefing</title>
+  <style>
+    :root {
+      --bg:       #111827;
+      --surface:  #1e2d45;
+      --card:     #243350;
+      --card-hdr: #162038;
+      --border:   #2a3f5f;
+      --accent:   #60a5fa;
+      --accent-lt:#93c5fd;
+      --text:     #e2e8f0;
+      --muted:    #6b7fa3;
+      --rose:     #f43f5e;
+      --green:    #34d399;
+      --card-txt: #e2e8f0;
+      --card-sub: #94a3b8;
+      --card-dim: #4f6285;
+      --card-sep: #2a3f5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: normal;
+      letter-spacing: 0.06em;
+      color: var(--text);
+    }
+
+    header h1 span {
+      color: var(--accent-lt);
+    }
+
+    .date-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .date-controls label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .date-controls input[type="date"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.6rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .date-controls input[type="date"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .date-controls button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 0.45rem 1rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      font-weight: bold;
+    }
+
+    .date-controls button:hover {
+      background: var(--accent-lt);
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    #status.error {
+      color: #fca5a5;
+    }
+
+    .summary-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .summary-chip {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding: 0.5rem 1rem;
+      border-radius: 3px;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    .summary-chip strong {
+      color: var(--text);
+      font-size: 1.1rem;
+      display: block;
+    }
+
+    .date-group {
+      margin-bottom: 2rem;
+    }
+
+    .date-group-header {
+      font-size: 0.9rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      color: var(--card-txt);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      background: var(--card-hdr);
+      border-bottom: 2px solid var(--accent);
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-room {
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      color: var(--accent-lt);
+    }
+
+    .card-nights {
+      font-size: 0.88rem;
+      background: var(--green);
+      color: #111;
+      padding: 0.15rem 0.55rem;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .card-body {
+      padding: 0.85rem 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .guest-name {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--card-txt);
+    }
+
+    .guest-additional {
+      font-size: 1rem;
+      color: var(--card-sub);
+      margin-top: -0.25rem;
+    }
+
+    .card-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+      font-size: 1rem;
+    }
+
+    .card-label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--card-dim);
+      flex-shrink: 0;
+      min-width: 85px;
+    }
+
+    .card-value {
+      color: var(--card-sub);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.88rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 10px;
+      margin: 0.1rem 0.1rem 0 0;
+    }
+
+    .tag-rose    { background: var(--rose);     color: #fff; }
+    .tag-accent  { background: var(--accent);   color: var(--bg); }
+    .tag-blue-lt { background: var(--accent-lt); color: var(--bg); }
+
+    .card-dates {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.92rem;
+      color: var(--card-dim);
+      margin-top: auto;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--card-sep);
+    }
+
+    .card-dates span { flex: 1; }
+
+    .arrival-badge {
+      display: inline-block;
+      background: var(--accent-lt);
+      color: var(--bg);
+      font-size: 0.92rem;
+      padding: 0.12rem 0.5rem;
+      border-radius: 3px;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+    }
+
+    .returning-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 0.82rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+      vertical-align: middle;
+    }
+
+    .phone-link {
+      color: var(--accent-lt);
+      text-decoration: none;
+    }
+
+    .phone-link:hover { text-decoration: underline; }
+
+    .no-results {
+      text-align: center;
+      padding: 4rem;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .calendar-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .cal-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .cal-day {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 0.6rem 0.85rem;
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+    }
+
+    .cal-day-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--accent-lt);
+      letter-spacing: 0.03em;
+    }
+
+    .cal-stat {
+      font-size: 1rem;
+      color: var(--card-txt);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .cal-stat.zero {
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Guest <span>Briefing</span></h1>
+  <div class="date-controls">
+    <label for="fromDate">From</label>
+    <input type="date" id="fromDate">
+    <label for="toDate">To</label>
+    <input type="date" id="toDate">
+    <button onclick="loadData()">Refresh</button>
+  </div>
+</header>
+
+<main>
+  <div id="status">Loading...</div>
+  <div id="summary" class="summary-bar" style="display:none"></div>
+  <div id="calendar" style="display:none"></div>
+  <div id="content"></div>
+</main>
+
+<script>
+  const API = '/stays/briefing';
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function fmtDate(d) {
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  function displayDate(iso) {
+    const [y, m, d] = iso.split('-');
+    const dt = new Date(y, m-1, d);
+    return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  function initDates() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const end = new Date(tomorrow);
+    end.setDate(end.getDate() + 6);
+    document.getElementById('fromDate').value = fmtDate(tomorrow);
+    document.getElementById('toDate').value = fmtDate(end);
+  }
+
+  async function loadData() {
+    const from = document.getElementById('fromDate').value;
+    const to = document.getElementById('toDate').value;
+    const status = document.getElementById('status');
+    const content = document.getElementById('content');
+    const summary = document.getElementById('summary');
+
+    status.textContent = 'Loading...';
+    status.className = '';
+    status.style.display = 'block';
+    content.innerHTML = '';
+    document.getElementById('calendar').innerHTML = '';
+    summary.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}?from=${from}&to=${to}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      status.style.display = 'none';
+
+      if (!data.length) {
+        content.innerHTML = '<div class="no-results">No stays found for this period.</div>';
+        return;
+      }
+
+      // Summary bar
+      const rooms = new Set(data.map(s => s.room)).size;
+      const totalNights = data.reduce((a, s) => a + s.nights, 0);
+      const checkIns = data.filter(s => s.checkIn >= from && s.checkIn <= to).length;
+      summary.innerHTML = `
+        <div class="summary-chip"><strong>${data.length}</strong>Stay${data.length !== 1 ? 's' : ''}</div>
+        <div class="summary-chip"><strong>${rooms}</strong>Room${rooms !== 1 ? 's' : ''}</div>
+        <div class="summary-chip"><strong>${checkIns}</strong>Arriving</div>
+        <div class="summary-chip"><strong>${totalNights}</strong>Guest Night${totalNights !== 1 ? 's' : ''}</div>
+      `;
+      summary.style.display = 'flex';
+
+      // Group by check-in date
+      const groups = {};
+      data.forEach(stay => {
+        if (!groups[stay.checkIn]) groups[stay.checkIn] = [];
+        groups[stay.checkIn].push(stay);
+      });
+
+      const sortedDates = Object.keys(groups).sort();
+      content.innerHTML = sortedDates.map(date => `
+        <div class="date-group">
+          <div class="date-group-header">Check-in: ${displayDate(date)}</div>
+          <div class="cards-grid">
+            ${groups[date].map(renderCard).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('calendar').innerHTML = renderCalendar(data, from, to);
+      document.getElementById('calendar').style.display = 'block';
+
+    } catch (err) {
+      status.textContent = `Failed to load data: ${err.message}`;
+      status.className = 'error';
+      status.style.display = 'block';
+    }
+  }
+
+  function renderCard(s) {
+    const tags = [];
+    if (s.specialAccommodations) tags.push(`<span class="tag tag-blue-lt">${esc(s.specialAccommodations)}</span>`);
+    if (s.addons && s.addons.length) s.addons.forEach(a => tags.push(`<span class="tag tag-rose">${esc(a)}</span>`));
+
+    const rows = [];
+
+    if (s.arrivalTime) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Arrival</span>
+        <span class="card-value"><span class="arrival-badge">${esc(s.arrivalTime)}</span></span>
+      </div>`);
+
+    if (s.dietaryRestrictions) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Dietary</span>
+        <span class="card-value">${esc(s.dietaryRestrictions)}</span>
+      </div>`);
+
+    if (s.reasonForStay) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Reason</span>
+        <span class="card-value">${esc(s.reasonForStay)}</span>
+      </div>`);
+
+    if (s.housekeepingNotes) rows.push(`
+      <div class="card-row">
+        <span class="card-label">H-Notes</span>
+        <span class="card-value">${esc(s.housekeepingNotes)}</span>
+      </div>`);
+
+    if (s.guestNotes) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Notes</span>
+        <span class="card-value">${esc(s.guestNotes)}</span>
+      </div>`);
+
+    if (s.phones && s.phones.length) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Phone</span>
+        <span class="card-value">${s.phones.map(p => `<a class="phone-link" href="tel:${p}">${fmtPhone(p)}</a>`).join(', ')}</span>
+      </div>`);
+
+    const returning = s.previousStayCount > 0
+      ? `<span class="returning-badge">Returning &times;${s.previousStayCount}</span>` : '';
+
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-room">${esc(s.room)}</div>
+          </div>
+          <span class="card-nights">${s.nights} night${s.nights !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="card-body">
+          <div>
+            <div class="guest-name">${esc(s.primaryGuestName)} ${returning}</div>
+            ${s.additionalGuestName ? `<div class="guest-additional">${esc(s.additionalGuestName)}</div>` : ''}
+          </div>
+          ${tags.length ? `<div>${tags.join('')}</div>` : ''}
+          ${rows.join('')}
+          <div class="card-dates">
+            <span>In: ${displayDate(s.checkIn)}</span>
+            <span>Out: ${displayDate(s.checkOut)}</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderCalendar(data, from, to) {
+    const days = [];
+    const cur = new Date(from + 'T00:00:00');
+    const end = new Date(to + 'T00:00:00');
+    while (cur <= end) {
+      days.push(fmtDate(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    const squares = days.map(day => {
+      const breakfast  = data.filter(s => s.checkIn < day && day <= s.checkOut).length;
+      const checkins   = data.filter(s => s.checkIn === day).length;
+      const checkouts  = data.filter(s => s.checkOut === day).length;
+      const [y, m, d] = day.split('-');
+      const dt = new Date(y, m - 1, d);
+      const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
+      return `
+        <div class="cal-day">
+          <div class="cal-day-label">${dayName} ${dt.getDate()}</div>
+          <div class="cal-stat${breakfast === 0 ? ' zero' : ''}">${breakfast} 🥞</div>
+          <div class="cal-stat${checkins  === 0 ? ' zero' : ''}">${checkins} ✅</div>
+          <div class="cal-stat${checkouts === 0 ? ' zero' : ''}">${checkouts} ❌</div>
+        </div>`;
+    }).join('');
+
+    return `<div class="calendar-section"><div class="cal-grid">${squares}</div></div>`;
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtPhone(p) {
+    let d = p.replace(/\D/g,'');
+    if (d.length === 11 && d[0] === '1') d = d.slice(1);
+    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    return p;
+  }
+
+  initDates();
+  loadData();
+</script>
+</body>
+</html>

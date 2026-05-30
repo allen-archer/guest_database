@@ -1,1 +1,1 @@
-curl -X POST http://localhost:8080/database/backup
+curl -u admin:changeme -X POST http://localhost:8080/database/backup
