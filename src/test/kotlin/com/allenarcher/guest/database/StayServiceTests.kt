@@ -27,13 +27,14 @@ class StayServiceTests {
         guestRepository.deleteAll()
     }
 
-    private fun createStayRequest(
+    private fun upsertStayRequest(
         externalId: Long = 1001L,
         primaryGuestName: String = "Alice",
         confirmationCode: String? = null,
         checkIn: LocalDate,
         checkOut: LocalDate,
-    ) = CreateStayRequest(
+        guest: UpsertGuestData? = null
+    ) = UpsertStayRequest(
         externalId = externalId,
         confirmationCode = confirmationCode,
         primaryGuestName = primaryGuestName,
@@ -43,15 +44,25 @@ class StayServiceTests {
             items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
             stateTax = BigDecimal("0.06"),
             countyTax = BigDecimal("0.01")
-        )
+        ),
+        guest = guest
+    )
+
+    private fun fullGuestData(externalId: Long = 5001L) = UpsertGuestData(
+        externalId = externalId,
+        name = "Alice Smith",
+        notes = "Prefers extra towels",
+        phones = listOf(PhoneRequest("555-100-0001")),
+        emails = listOf(EmailRequest("alice@example.com")),
+        addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701", "US"))
     )
 
     @Test
     fun `stay within range is returned`() {
-        stayService.createStay(createStayRequest(
+        stayService.upsertStays(listOf(upsertStayRequest(
             checkIn = LocalDate.of(2026, 3, 1),
             checkOut = LocalDate.of(2026, 3, 5)
-        ))
+        )))
         val results = stayService.getStaysInRange(
             from = LocalDate.of(2026, 1, 1),
             to = LocalDate.of(2026, 12, 31)
@@ -61,10 +72,10 @@ class StayServiceTests {
 
     @Test
     fun `stay outside range is not returned`() {
-        stayService.createStay(createStayRequest(
+        stayService.upsertStays(listOf(upsertStayRequest(
             checkIn = LocalDate.of(2025, 6, 1),
             checkOut = LocalDate.of(2025, 6, 5)
-        ))
+        )))
         val results = stayService.getStaysInRange(
             from = LocalDate.of(2026, 1, 1),
             to = LocalDate.of(2026, 12, 31)
@@ -74,15 +85,9 @@ class StayServiceTests {
 
     @Test
     fun `only stays within range are returned`() {
-        stayService.createStay(createStayRequest(
-            externalId = 1001L,
-            checkIn = LocalDate.of(2026, 3, 1),
-            checkOut = LocalDate.of(2026, 3, 5)
-        ))
-        stayService.createStay(createStayRequest(
-            externalId = 1002L,
-            checkIn = LocalDate.of(2025, 6, 1),
-            checkOut = LocalDate.of(2025, 6, 5)
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 3, 1), checkOut = LocalDate.of(2026, 3, 5)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2025, 6, 1), checkOut = LocalDate.of(2025, 6, 5))
         ))
         val results = stayService.getStaysInRange(
             from = LocalDate.of(2026, 1, 1),
@@ -92,64 +97,60 @@ class StayServiceTests {
     }
 
     @Test
-    fun `createStay returns correct dates and primaryGuestName`() {
-        val response = stayService.createStay(createStayRequest(
+    fun `upsertStays returns correct dates and primaryGuestName`() {
+        val response = stayService.upsertStays(listOf(upsertStayRequest(
             primaryGuestName = "Bob",
             checkIn = LocalDate.of(2026, 6, 1),
             checkOut = LocalDate.of(2026, 6, 3)
-        ))
+        )))[0]
         assertEquals(LocalDate.of(2026, 6, 1), response.checkIn)
         assertEquals(LocalDate.of(2026, 6, 3), response.checkOut)
         assertEquals("Bob", response.primaryGuestName)
     }
 
     @Test
-    fun `createStay returns externalId`() {
-        val response = stayService.createStay(createStayRequest(
+    fun `upsertStays returns externalId`() {
+        val response = stayService.upsertStays(listOf(upsertStayRequest(
             externalId = 1001L,
             checkIn = LocalDate.of(2026, 6, 1),
             checkOut = LocalDate.of(2026, 6, 3)
-        ))
+        )))[0]
         assertEquals(1001L, response.externalId)
     }
 
-    private fun enrichRequest(
-        stayExternalId: Long = 1001L,
-        guestExternalId: Long = 5001L
-    ) = EnrichStayRequest(
-        stay = EnrichStayData(
-            externalId = stayExternalId,
+    @Test
+    fun `upsertStays creates guest and links to stay`() {
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))[0]
+        assertNotNull(result.guest)
+        assertEquals(5001L, result.guest!!.externalId)
+        assertEquals("Alice Smith", result.guest.name)
+    }
+
+    @Test
+    fun `upsertStays updates stay fields on second call`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
+        val result = stayService.upsertStays(listOf(UpsertStayRequest(
+            externalId = 1001L,
+            primaryGuestName = "Alice",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
             additionalGuestName = "Bob Smith",
             specialAccommodations = "Ground floor",
             dietaryRestrictions = "Gluten free",
             arrivalTime = "3:00 PM",
             housekeepingNotes = "No disturbance",
-            reasonForStay = "Anniversary"
-        ),
-        guest = EnrichGuestData(
-            externalId = guestExternalId,
-            name = "Alice Smith",
-            notes = "Prefers extra towels",
-            phones = listOf(PhoneRequest("555-100-0001")),
-            emails = listOf(EmailRequest("alice@example.com")),
-            addresses = listOf(AddressRequest("123 Main St", "Springfield", "IL", "62701", "US"))
-        )
-    )
-
-    @Test
-    fun `enrichStays creates guest and links to stay`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        val results = stayService.enrichStays(listOf(enrichRequest()))
-        assertEquals(1, results.size)
-        assertNotNull(results[0].guest)
-        assertEquals(5001L, results[0].guest!!.externalId)
-        assertEquals("Alice Smith", results[0].guest!!.name)
-    }
-
-    @Test
-    fun `enrichStays updates stay fields`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        val result = stayService.enrichStays(listOf(enrichRequest()))[0]
+            reasonForStay = "Anniversary",
+            invoice = CreateInvoiceRequest(
+                items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            ),
+            guest = fullGuestData()
+        )))[0]
         assertEquals("Bob Smith", result.additionalGuestName)
         assertEquals("Ground floor", result.specialAccommodations)
         assertEquals("Gluten free", result.dietaryRestrictions)
@@ -159,24 +160,38 @@ class StayServiceTests {
     }
 
     @Test
-    fun `enrichStays updates existing guest name and notes`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest()))
-        val updated = enrichRequest().copy(
-            guest = enrichRequest().guest.copy(name = "Alice Updated", notes = "New note")
-        )
-        val result = stayService.enrichStays(listOf(updated))[0]
+    fun `upsertStays links guest on second call`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))[0]
+        assertNotNull(result.guest)
+        assertEquals("Alice Smith", result.guest!!.name)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertStays updates existing guest name and notes`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), guest = fullGuestData())))
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData().copy(name = "Alice Updated", notes = "New note")
+        )))[0]
         assertEquals("Alice Updated", result.guest!!.name)
         assertEquals("New note", result.guest.notes)
         assertEquals(1, guestRepository.count())
     }
 
     @Test
-    fun `enrichStays accumulates new phones emails and addresses on existing guest`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest()))
-        val updated = enrichRequest().copy(
-            guest = enrichRequest().guest.copy(
+    fun `upsertStays accumulates new phones emails and addresses on existing guest`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), guest = fullGuestData())))
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData().copy(
                 phones = listOf(PhoneRequest("555-100-0001"), PhoneRequest("555-999-9999")),
                 emails = listOf(EmailRequest("alice@example.com"), EmailRequest("alice2@example.com")),
                 addresses = listOf(
@@ -184,45 +199,38 @@ class StayServiceTests {
                     AddressRequest("456 Oak Ave", "Springfield", "IL", "62702", "US")
                 )
             )
-        )
-        val result = stayService.enrichStays(listOf(updated))[0]
+        )))[0]
         assertEquals(2, result.guest!!.phones.size)
         assertEquals(2, result.guest.emails.size)
         assertEquals(2, result.guest.addresses.size)
     }
 
     @Test
-    fun `enrichStays does not duplicate existing phones emails or addresses`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest()))
-        val result = stayService.enrichStays(listOf(enrichRequest()))[0]
+    fun `upsertStays does not duplicate existing phones emails or addresses`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), guest = fullGuestData())))
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))[0]
         assertEquals(1, result.guest!!.phones.size)
         assertEquals(1, result.guest.emails.size)
         assertEquals(1, result.guest.addresses.size)
     }
 
     @Test
-    fun `enrichStays handles batch`() {
-        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5)))
-        val results = stayService.enrichStays(listOf(
-            enrichRequest(stayExternalId = 1001L, guestExternalId = 5001L),
-            enrichRequest(stayExternalId = 1002L, guestExternalId = 5002L)
+    fun `upsertStays handles batch`() {
+        val results = stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), guest = fullGuestData(5001L)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5), guest = fullGuestData(5002L))
         ))
         assertEquals(2, results.size)
         assertEquals(2, guestRepository.count())
     }
 
     @Test
-    fun `enrichStays throws when stay not found`() {
-        assertThrows(IllegalArgumentException::class.java) {
-            stayService.enrichStays(listOf(enrichRequest(stayExternalId = 9999L)))
-        }
-    }
-
-    @Test
     fun `cancelStay sets status to CANCELED`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
         val result = stayService.cancelStay(1001L)
         assertEquals(StayStatus.CANCELED, result.status)
     }
@@ -236,15 +244,17 @@ class StayServiceTests {
 
     @Test
     fun `getStaysBriefing returns scheduled stays in range`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
         val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
         assertEquals(1, results.size)
     }
 
     @Test
     fun `getStaysBriefing excludes canceled stays`() {
-        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5)))
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5))
+        ))
         stayService.cancelStay(1002L)
         val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
         assertEquals(1, results.size)
@@ -252,30 +262,59 @@ class StayServiceTests {
 
     @Test
     fun `getStaysBriefing excludes stays outside range`() {
-        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2025, 6, 1), checkOut = LocalDate.of(2025, 6, 5)))
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2025, 6, 1), checkOut = LocalDate.of(2025, 6, 5))
+        ))
         val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
         assertEquals(1, results.size)
     }
 
     @Test
     fun `getStaysBriefing returns correct fields`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest()))
+        stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))
         val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
         assertEquals("Alice", result.primaryGuestName)
         assertEquals(LocalDate.of(2026, 6, 1), result.checkIn)
         assertEquals(LocalDate.of(2026, 6, 5), result.checkOut)
         assertEquals(4L, result.nights)
         assertEquals("Jade Vine Suite", result.room)
+        assertEquals(emptyList<String>(), result.addons)
         assertEquals("Prefers extra towels", result.guestNotes)
         assertEquals(listOf("5551000001"), result.phones)
     }
 
     @Test
+    fun `getStaysBriefing returns addons for non-room items`() {
+        stayService.upsertStays(listOf(UpsertStayRequest(
+            externalId = 1001L,
+            primaryGuestName = "Alice",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            invoice = CreateInvoiceRequest(
+                items = listOf(
+                    InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1)),
+                    InvoiceItemRequest("Mugs", null, 2, BigDecimal("20.00"), LocalDate.of(2026, 6, 1))
+                ),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            )
+        )))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(listOf("Mugs"), result.addons)
+    }
+
+    @Test
     fun `getStaysBriefing returns zero previousStayCount for first time guest`() {
-        stayService.createStay(createStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest()))
+        stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))
         val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
         assertEquals(0, result.previousStayCount)
         assertNull(result.lastStay)
@@ -283,10 +322,10 @@ class StayServiceTests {
 
     @Test
     fun `getStaysBriefing returns correct history for returning guest`() {
-        stayService.createStay(createStayRequest(externalId = 1001L, checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 3)))
-        stayService.createStay(createStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)))
-        stayService.enrichStays(listOf(enrichRequest(stayExternalId = 1001L, guestExternalId = 5001L)))
-        stayService.enrichStays(listOf(enrichRequest(stayExternalId = 1002L, guestExternalId = 5001L)))
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 3), guest = fullGuestData()),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), guest = fullGuestData())
+        ))
         val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
         assertEquals(1, result.previousStayCount)
         assertEquals("Jade Vine Suite", result.lastStay?.room)
@@ -295,14 +334,13 @@ class StayServiceTests {
 
     @Test
     fun `getStaysWithoutGuest returns stays with no guest`() {
-        stayService.createStay(createStayRequest(
+        stayService.upsertStays(listOf(upsertStayRequest(
             externalId = 1001L,
             checkIn = LocalDate.of(2026, 6, 1),
             checkOut = LocalDate.of(2026, 6, 5)
-        ))
+        )))
         val results = stayService.getStaysWithoutGuest()
         assertEquals(1, results.size)
         assertEquals(null, results[0].guest)
     }
-
 }

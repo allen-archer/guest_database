@@ -6,14 +6,14 @@ A personal guest database populated by my reservation system.
 
 **Step 1 — Reservation email**
 
-When a guest books online, the reservation system sends an email. An automation parses that email and calls `POST /stays` to create a stub stay with the guest's name, dates, and invoice.
+When a guest books online, the reservation system sends an email. An automation parses that email and calls `POST /stays/upsert` with the guest's name, dates, and invoice. The guest field is optional — a sparse call without it creates the stay without a linked guest.
 
 **Step 2 — Scraper enrichment**
 
-Separately, I have a web scraper that gets extra data and calls `GET /stays/without-guest` to find stays that haven't been enriched yet. For each stay it uses the `externalId` to pull full details from the reservation system, then calls `POST /stays/enrich` to:
-- Upsert the guest by `externalId` (creates if new, updates if returning)
-- Accumulate any new phone numbers, emails, or addresses
-- Populate stay details like arrival time, dietary restrictions, and special accommodations
+Separately, I have a web scraper that calls `GET /stays/without-guest` to find stays not yet linked to a guest. For each stay it pulls full details from the reservation system, then calls `POST /stays/upsert` again with the complete data including the guest. The upsert:
+- Updates all stay fields unconditionally
+- Upserts the guest by `externalId` (creates if new, updates if returning)
+- Accumulates any new phone numbers, emails, or addresses
 
 ## Building
 
@@ -45,16 +45,16 @@ The `test` Spring profile enables the `DELETE /database/clear` endpoint for rese
 
 ## API
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/stays` | Create a stub stay from a reservation email |
-| `GET` | `/stays?from=&to=` | Get stays within a date range |
-| `GET` | `/stays/without-guest` | Get stays not yet enriched by the scraper |
-| `POST` | `/stays/enrich` | Enrich one or more stays with guest and stay details |
-| `POST` | `/stays/{externalId}/cancel` | Cancel a stay |
-| `POST` | `/guests` | Create a guest manually |
-| `GET` | `/guests/{externalId}/history` | Get a guest's stay count and last stay details |
-| `POST` | `/database/backup` | Back up the database |
+| Method | Path | Description                                      |
+|--------|------|--------------------------------------------------|
+| `POST` | `/stays/upsert` | Create or update one or more stays               |
+| `GET` | `/stays?from=&to=` | Get stays within a date range                    |
+| `GET` | `/stays/briefing?from=&to=` | Get a summary of scheduled stays in a date range |
+| `GET` | `/stays/without-guest` | Get stays not yet linked to a guest              |
+| `POST` | `/stays/{externalId}/cancel` | Cancel a stay                                    |
+| `POST` | `/guests` | Create a guest manually                          |
+| `GET` | `/guests/{externalId}/history` | Get a guest's stay count and last stay details   |
+| `POST` | `/database/backup` | Back up the database                             |
 
 ## Scripts
 
