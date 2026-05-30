@@ -47,6 +47,7 @@ fun Stay.toBriefingResponse(previousStays: List<Stay>) = StayBriefingResponse(
     checkOut = checkOut,
     nights = ChronoUnit.DAYS.between(checkIn, checkOut),
     room = invoice?.items?.firstOrNull { it.type == "Room" }?.name,
+    addons = invoice?.items?.filter { it.type != "Room" }?.map { it.type } ?: emptyList(),
     guestNotes = guest?.notes,
     phones = guest?.phones?.map { it.number } ?: emptyList(),
     previousStayCount = previousStays.size,

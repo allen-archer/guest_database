@@ -27,10 +27,9 @@ class GuestServiceTests {
         guestRepository.deleteAll()
     }
 
-    private fun createEnrichedStay(stayExternalId: Long, guestExternalId: Long, checkIn: LocalDate, checkOut: LocalDate, room: String, status: StayStatus = StayStatus.SCHEDULED, confirmationCode: String? = null) {
-        stayService.createStay(CreateStayRequest(
+    private fun createFullStay(stayExternalId: Long, guestExternalId: Long, checkIn: LocalDate, checkOut: LocalDate, room: String, status: StayStatus = StayStatus.SCHEDULED) {
+        stayService.upsertStays(listOf(UpsertStayRequest(
             externalId = stayExternalId,
-            confirmationCode = confirmationCode,
             primaryGuestName = "Alice Smith",
             status = status,
             checkIn = checkIn,
@@ -39,11 +38,8 @@ class GuestServiceTests {
                 items = listOf(InvoiceItemRequest("Room", room, 1, BigDecimal("150.00"), checkIn)),
                 stateTax = BigDecimal("0.06"),
                 countyTax = BigDecimal("0.01")
-            )
-        ))
-        stayService.enrichStays(listOf(EnrichStayRequest(
-            stay = EnrichStayData(externalId = stayExternalId),
-            guest = EnrichGuestData(externalId = guestExternalId, name = "Alice Smith")
+            ),
+            guest = UpsertGuestData(externalId = guestExternalId, name = "Alice Smith")
         )))
     }
 
@@ -103,8 +99,8 @@ class GuestServiceTests {
 
     @Test
     fun `getGuestHistory returns correct count and last stay`() {
-        createEnrichedStay(1001L, 5001L, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 3), "Willow Cottage")
-        createEnrichedStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite")
+        createFullStay(1001L, 5001L, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 3), "Willow Cottage")
+        createFullStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite")
         val history = guestService.getGuestHistory(5001L)
         assertEquals(2, history.previousStayCount)
         assertEquals("Jade Vine Suite", history.lastStay?.room)
@@ -114,8 +110,8 @@ class GuestServiceTests {
 
     @Test
     fun `getGuestHistory excludes canceled stays`() {
-        createEnrichedStay(1001L, 5001L, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 3), "Willow Cottage")
-        createEnrichedStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite", StayStatus.CANCELED)
+        createFullStay(1001L, 5001L, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 3), "Willow Cottage")
+        createFullStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite", StayStatus.CANCELED)
         val history = guestService.getGuestHistory(5001L)
         assertEquals(1, history.previousStayCount)
         assertEquals("Willow Cottage", history.lastStay?.room)

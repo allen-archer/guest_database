@@ -23,9 +23,9 @@ class Controller(
     fun getGuestHistory(@PathVariable externalId: Long): GuestHistoryResponse =
         guestService.getGuestHistory(externalId)
 
-    @PostMapping("/stays")
-    fun createStay(@RequestBody request: CreateStayRequest): StayResponse =
-        stayService.createStay(request)
+    @PostMapping("/stays/upsert")
+    fun upsertStays(@RequestBody requests: List<UpsertStayRequest>): List<StayResponse> =
+        stayService.upsertStays(requests)
 
     @GetMapping("/stays")
     fun getStays(
@@ -41,10 +41,6 @@ class Controller(
 
     @GetMapping("/stays/without-guest")
     fun getStaysWithoutGuest(): List<StayResponse> = stayService.getStaysWithoutGuest()
-
-    @PostMapping("/stays/enrich")
-    fun enrichStays(@RequestBody requests: List<EnrichStayRequest>): List<StayResponse> =
-        stayService.enrichStays(requests)
 
     @PostMapping("/stays/{externalId}/cancel")
     fun cancelStay(@PathVariable externalId: Long): StayResponse =

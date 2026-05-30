@@ -1,6 +1,6 @@
 package com.allenarcher.guest.database.models
 
-fun EnrichGuestData.toDatabase() = Guest(
+fun UpsertGuestData.toDatabase() = Guest(
     externalId = externalId,
     name = name,
     notes = notes,
@@ -33,7 +33,7 @@ fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
     countyTax = countyTax
 )
 
-fun CreateStayRequest.toDatabase(): Stay {
+fun UpsertStayRequest.toDatabase(): Stay {
     val stay = Stay(
         externalId = externalId,
         confirmationCode = confirmationCode,

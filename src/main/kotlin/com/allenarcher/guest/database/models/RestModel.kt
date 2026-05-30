@@ -12,9 +12,9 @@ data class CreateGuestRequest(
     val addresses: List<AddressRequest> = emptyList()
 )
 
-data class CreateStayRequest(
+data class UpsertStayRequest(
     val externalId: Long,
-    val confirmationCode: String?,
+    val confirmationCode: String? = null,
     val primaryGuestName: String,
     val status: StayStatus = StayStatus.SCHEDULED,
     val additionalGuestName: String? = null,
@@ -25,37 +25,23 @@ data class CreateStayRequest(
     val reasonForStay: String? = null,
     val checkIn: LocalDate,
     val checkOut: LocalDate,
-    val invoice: CreateInvoiceRequest
+    val invoice: CreateInvoiceRequest,
+    val guest: UpsertGuestData? = null
 )
 
-data class CreateInvoiceRequest(
-    val items: List<InvoiceItemRequest>,
-    val stateTax: BigDecimal,
-    val countyTax: BigDecimal
-)
-
-data class EnrichStayRequest(
-    val stay: EnrichStayData,
-    val guest: EnrichGuestData
-)
-
-data class EnrichStayData(
-    val externalId: Long,
-    val additionalGuestName: String? = null,
-    val specialAccommodations: String? = null,
-    val dietaryRestrictions: String? = null,
-    val arrivalTime: String? = null,
-    val housekeepingNotes: String? = null,
-    val reasonForStay: String? = null
-)
-
-data class EnrichGuestData(
+data class UpsertGuestData(
     val externalId: Long,
     val name: String,
     val notes: String? = null,
     val phones: List<PhoneRequest> = emptyList(),
     val emails: List<EmailRequest> = emptyList(),
     val addresses: List<AddressRequest> = emptyList()
+)
+
+data class CreateInvoiceRequest(
+    val items: List<InvoiceItemRequest>,
+    val stateTax: BigDecimal,
+    val countyTax: BigDecimal
 )
 
 data class InvoiceItemRequest(val type: String, val name: String?, val quantity: Int, val amount: BigDecimal, val date: LocalDate)
@@ -94,6 +80,7 @@ data class StayBriefingResponse(
     val checkOut: LocalDate,
     val nights: Long,
     val room: String?,
+    val addons: List<String>,
     val guestNotes: String?,
     val phones: List<String>,
     val previousStayCount: Int,
