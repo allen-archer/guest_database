@@ -1,1 +1,1 @@
-curl -s "http://localhost:8080/stays/briefing?from=2026-05-15&to=2026-05-31" | jq
+curl -s -u admin:changeme "http://localhost:8080/stays/briefing?from=2026-04-01&to=2026-04-10" | jq

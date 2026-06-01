@@ -1,10 +1,6 @@
 spring:
   application:
     name: guest_database
-  security:
-    user:
-      name: ${GUEST_DB_USER:admin}
-      password: ${GUEST_DB_PASSWORD:changeme}
   datasource:
     url: jdbc:sqlite:${DB_PATH:./data/guest_database.db}
     driver-class-name: org.sqlite.JDBC
@@ -20,6 +16,11 @@ logging:
   level:
     org.hibernate.orm.jdbc.error: ERROR
 guest-database:
+  remember-me-key: ${GUEST_DB_REMEMBER_ME_KEY:changeme-key}
+  admin-user: ${GUEST_DB_USER:admin}
+  admin-password: ${GUEST_DB_PASSWORD:changeme}
+  reader-user: ${GUEST_DB_READER_USER:reader}
+  reader-password: ${GUEST_DB_READER_PASSWORD:changeme}
   room-combos:
     "[dogwood-maple suite]":
       - Dogwood Suite
