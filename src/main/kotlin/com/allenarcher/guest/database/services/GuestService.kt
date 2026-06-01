@@ -21,7 +21,7 @@ class GuestService(
         val stays = stayRepository.findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guestExternalId, StayStatus.CANCELED)
         val lastStay = stays.firstOrNull()?.let {
             LastStayResponse(
-                room = it.invoice?.items?.firstOrNull { item -> item.type == "Room" }?.name,
+                rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
                 checkIn = it.checkIn,
                 checkOut = it.checkOut
             )

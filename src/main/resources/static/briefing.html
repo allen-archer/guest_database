@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guest Briefing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:       #111827;
@@ -26,7 +28,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Roboto Slab', Rockwell, 'Courier New', serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -41,17 +43,6 @@
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
-    }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: normal;
-      letter-spacing: 0.06em;
-      color: var(--text);
-    }
-
-    header h1 span {
-      color: var(--accent-lt);
     }
 
     .date-controls {
@@ -207,6 +198,13 @@
       gap: 0.5rem;
     }
 
+    .guest-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .guest-name {
       font-size: 1.1rem;
       font-weight: bold;
@@ -230,13 +228,13 @@
       font-size: 0.82rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--card-dim);
+      color: var(--card-txt);
       flex-shrink: 0;
       min-width: 85px;
     }
 
     .card-value {
-      color: var(--card-sub);
+      color: var(--accent-lt);
     }
 
     .tag {
@@ -244,24 +242,10 @@
       font-size: 0.88rem;
       padding: 0.15rem 0.55rem;
       border-radius: 10px;
-      margin: 0.1rem 0.1rem 0 0;
     }
 
     .tag-rose    { background: var(--rose);     color: #fff; }
-    .tag-accent  { background: var(--accent);   color: var(--bg); }
     .tag-blue-lt { background: var(--accent-lt); color: var(--bg); }
-
-    .card-dates {
-      display: flex;
-      gap: 0.5rem;
-      font-size: 0.92rem;
-      color: var(--card-dim);
-      margin-top: auto;
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--card-sep);
-    }
-
-    .card-dates span { flex: 1; }
 
     .arrival-badge {
       display: inline-block;
@@ -328,22 +312,32 @@
     }
 
     .cal-stat {
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: var(--card-txt);
       display: flex;
       align-items: center;
-      gap: 0.35rem;
+      justify-content: space-between;
+    }
+
+    .cal-stat strong {
+      font-size: 1.1rem;
+      color: var(--text);
     }
 
     .cal-stat.zero {
       visibility: hidden;
+    }
+
+    .cal-divider {
+      border: none;
+      border-top: 1px solid var(--muted);
+      margin: 0;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Guest <span>Briefing</span></h1>
   <div class="date-controls">
     <label for="fromDate">From</label>
     <input type="date" id="fromDate">
@@ -399,32 +393,37 @@
     summary.style.display = 'none';
 
     try {
-      const res = await fetch(`${API}?from=${from}&to=${to}`);
+      const extFrom = new Date(from + 'T00:00:00');
+      extFrom.setDate(extFrom.getDate() - 7);
+      const extFromStr = fmtDate(extFrom);
+
+      const res = await fetch(`${API}?from=${extFromStr}&to=${to}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      const visibleData = data.filter(s => s.checkIn >= from);
 
       status.style.display = 'none';
 
-      if (!data.length) {
+      if (!visibleData.length) {
         content.innerHTML = '<div class="no-results">No stays found for this period.</div>';
         return;
       }
 
       // Summary bar
-      const rooms = new Set(data.map(s => s.room)).size;
-      const totalNights = data.reduce((a, s) => a + s.nights, 0);
-      const checkIns = data.filter(s => s.checkIn >= from && s.checkIn <= to).length;
+      const rooms = new Set(visibleData.flatMap(s => s.rooms.map(r => r.name))).size;
+      const totalNights = visibleData.flatMap(s => s.rooms).reduce((a, r) => a + r.nights, 0);
+      const checkIns = visibleData.filter(s => s.checkIn >= from && s.checkIn <= to).length;
       summary.innerHTML = `
-        <div class="summary-chip"><strong>${data.length}</strong>Stay${data.length !== 1 ? 's' : ''}</div>
+        <div class="summary-chip"><strong>${visibleData.length}</strong>Stay${visibleData.length !== 1 ? 's' : ''}</div>
         <div class="summary-chip"><strong>${rooms}</strong>Room${rooms !== 1 ? 's' : ''}</div>
         <div class="summary-chip"><strong>${checkIns}</strong>Arriving</div>
         <div class="summary-chip"><strong>${totalNights}</strong>Guest Night${totalNights !== 1 ? 's' : ''}</div>
       `;
       summary.style.display = 'flex';
 
-      // Group by check-in date
+      // Group by check-in date (only visible stays in cards)
       const groups = {};
-      data.forEach(stay => {
+      visibleData.forEach(stay => {
         if (!groups[stay.checkIn]) groups[stay.checkIn] = [];
         groups[stay.checkIn].push(stay);
       });
@@ -432,13 +431,14 @@
       const sortedDates = Object.keys(groups).sort();
       content.innerHTML = sortedDates.map(date => `
         <div class="date-group">
-          <div class="date-group-header">Check-in: ${displayDate(date)}</div>
+          <div class="date-group-header">${displayDate(date)}</div>
           <div class="cards-grid">
-            ${groups[date].map(renderCard).join('')}
+            ${groups[date].flatMap(s => s.rooms.map((room, i) => renderCard(s, room, i === 0))).join('')}
           </div>
         </div>
       `).join('');
 
+      // Calendar uses full data set to capture carryover guests
       document.getElementById('calendar').innerHTML = renderCalendar(data, from, to);
       document.getElementById('calendar').style.display = 'block';
 
@@ -449,10 +449,32 @@
     }
   }
 
-  function renderCard(s) {
-    const tags = [];
-    if (s.specialAccommodations) tags.push(`<span class="tag tag-blue-lt">${esc(s.specialAccommodations)}</span>`);
-    if (s.addons && s.addons.length) s.addons.forEach(a => tags.push(`<span class="tag tag-rose">${esc(a)}</span>`));
+  function renderCard(s, room, isPrimary) {
+    const returning = s.previousStayCount > 0
+      ? `<span class="returning-badge">Returning &times;${s.previousStayCount}</span>` : '';
+
+    const header = `
+      <div class="card-header">
+        <div class="card-room">${esc(room.name)}</div>
+        <span class="card-nights">${room.nights} night${room.nights !== 1 ? 's' : ''}</span>
+      </div>`;
+
+    const guestBlock = `
+      <div>
+        <div class="guest-name-row">
+          <div class="guest-name">${esc(s.primaryGuestName)}</div>
+          ${isPrimary ? returning : ''}
+        </div>
+        ${s.additionalGuestName ? `<div class="guest-additional">${esc(s.additionalGuestName)}</div>` : ''}
+      </div>`;
+
+    if (!isPrimary) {
+      return `
+        <div class="card">
+          ${header}
+          <div class="card-body">${guestBlock}</div>
+        </div>`;
+    }
 
     const rows = [];
 
@@ -461,6 +483,12 @@
         <span class="card-label">Arrival</span>
         <span class="card-value"><span class="arrival-badge">${esc(s.arrivalTime)}</span></span>
       </div>`);
+
+    if (s.specialAccommodations) rows.push(`
+      <div><span class="tag tag-blue-lt">${esc(s.specialAccommodations)}</span></div>`);
+
+    if (s.addons && s.addons.length) s.addons.forEach(a => rows.push(`
+      <div><span class="tag tag-rose">${esc(a)}</span></div>`));
 
     if (s.dietaryRestrictions) rows.push(`
       <div class="card-row">
@@ -492,33 +520,23 @@
         <span class="card-value">${s.phones.map(p => `<a class="phone-link" href="tel:${p}">${fmtPhone(p)}</a>`).join(', ')}</span>
       </div>`);
 
-    const returning = s.previousStayCount > 0
-      ? `<span class="returning-badge">Returning &times;${s.previousStayCount}</span>` : '';
-
     return `
       <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-room">${esc(s.room)}</div>
-          </div>
-          <span class="card-nights">${s.nights} night${s.nights !== 1 ? 's' : ''}</span>
-        </div>
+        ${header}
         <div class="card-body">
-          <div>
-            <div class="guest-name">${esc(s.primaryGuestName)} ${returning}</div>
-            ${s.additionalGuestName ? `<div class="guest-additional">${esc(s.additionalGuestName)}</div>` : ''}
-          </div>
-          ${tags.length ? `<div>${tags.join('')}</div>` : ''}
+          ${guestBlock}
           ${rows.join('')}
-          <div class="card-dates">
-            <span>In: ${displayDate(s.checkIn)}</span>
-            <span>Out: ${displayDate(s.checkOut)}</span>
-          </div>
         </div>
       </div>`;
   }
 
   function renderCalendar(data, from, to) {
+    const roomSlots = data.flatMap(s => s.rooms.map(r => {
+      const co = new Date(s.checkIn + 'T00:00:00');
+      co.setDate(co.getDate() + r.nights);
+      return { checkIn: s.checkIn, checkOut: fmtDate(co) };
+    }));
+
     const days = [];
     const cur = new Date(from + 'T00:00:00');
     const end = new Date(to + 'T00:00:00');
@@ -528,18 +546,20 @@
     }
 
     const squares = days.map(day => {
-      const breakfast  = data.filter(s => s.checkIn < day && day <= s.checkOut).length;
-      const checkins   = data.filter(s => s.checkIn === day).length;
-      const checkouts  = data.filter(s => s.checkOut === day).length;
+      const breakfast  = roomSlots.filter(r => r.checkIn < day && day <= r.checkOut).length;
+      const checkins   = roomSlots.filter(r => r.checkIn === day).length;
+      const checkouts  = roomSlots.filter(r => r.checkOut === day).length;
       const [y, m, d] = day.split('-');
       const dt = new Date(y, m - 1, d);
       const dayName = dt.toLocaleDateString('en-US', { weekday: 'short' });
       return `
         <div class="cal-day">
           <div class="cal-day-label">${dayName} ${dt.getDate()}</div>
-          <div class="cal-stat${breakfast === 0 ? ' zero' : ''}">${breakfast} 🥞</div>
-          <div class="cal-stat${checkins  === 0 ? ' zero' : ''}">${checkins} ✅</div>
-          <div class="cal-stat${checkouts === 0 ? ' zero' : ''}">${checkouts} ❌</div>
+          <div class="cal-stat${breakfast === 0 ? ' zero' : ''}">🥞 <strong>${breakfast}</strong></div>
+          <hr class="cal-divider">
+          <div class="cal-stat${checkins  === 0 ? ' zero' : ''}">✅ <strong>${checkins}</strong></div>
+          <hr class="cal-divider">
+          <div class="cal-stat${checkouts === 0 ? ' zero' : ''}">❌ <strong>${checkouts}</strong></div>
         </div>`;
     }).join('');
 

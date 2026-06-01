@@ -8,3 +8,13 @@ spring:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
       ddl-auto: create-drop
+guest-database:
+  room-combos:
+    "[dogwood-maple suite]":
+      - Dogwood Suite
+      - Maple Suite
+    "[whole main house]":
+      - Dogwood Suite
+      - Jade Vine Suite
+      - Gum Tree Suite
+      - Maple Suite

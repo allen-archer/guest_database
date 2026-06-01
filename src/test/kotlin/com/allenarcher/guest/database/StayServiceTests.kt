@@ -282,7 +282,7 @@ class StayServiceTests {
         assertEquals(LocalDate.of(2026, 6, 1), result.checkIn)
         assertEquals(LocalDate.of(2026, 6, 5), result.checkOut)
         assertEquals(4L, result.nights)
-        assertEquals("Jade Vine Suite", result.room)
+        assertEquals(listOf(RoomNights("Jade Vine Suite", 1)), result.rooms)
         assertEquals(emptyList<String>(), result.addons)
         assertEquals("Prefers extra towels", result.guestNotes)
         assertEquals(listOf("5551000001"), result.phones)
@@ -328,7 +328,7 @@ class StayServiceTests {
         ))
         val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
         assertEquals(1, result.previousStayCount)
-        assertEquals("Jade Vine Suite", result.lastStay?.room)
+        assertEquals(listOf("Jade Vine Suite"), result.lastStay?.rooms)
         assertEquals(LocalDate.of(2025, 1, 1), result.lastStay?.checkIn)
     }
 
@@ -342,5 +342,48 @@ class StayServiceTests {
         val results = stayService.getStaysWithoutGuest()
         assertEquals(1, results.size)
         assertEquals(null, results[0].guest)
+    }
+
+    private fun briefingRequestWithRoom(roomName: String, nights: Int = 2) = UpsertStayRequest(
+        externalId = 1001L,
+        primaryGuestName = "Test Guest",
+        checkIn = LocalDate.of(2026, 6, 1),
+        checkOut = LocalDate.of(2026, 6, 1).plusDays(nights.toLong()),
+        invoice = CreateInvoiceRequest(
+            items = (1..nights).map { i ->
+                InvoiceItemRequest("Room", roomName, 1, BigDecimal("150.00"), LocalDate.of(2026, 6, i))
+            },
+            stateTax = BigDecimal("0.06"),
+            countyTax = BigDecimal("0.01")
+        )
+    )
+
+    @Test
+    fun `getStaysBriefing expands combo room into individual rooms`() {
+        stayService.upsertStays(listOf(briefingRequestWithRoom("Dogwood-Maple Suite", 2)))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(listOf(RoomNights("Dogwood Suite", 2), RoomNights("Maple Suite", 2)), result.rooms)
+    }
+
+    @Test
+    fun `getStaysBriefing expands whole main house into all rooms`() {
+        stayService.upsertStays(listOf(briefingRequestWithRoom("Whole Main House", 3)))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(
+            listOf(
+                RoomNights("Dogwood Suite", 3),
+                RoomNights("Jade Vine Suite", 3),
+                RoomNights("Gum Tree Suite", 3),
+                RoomNights("Maple Suite", 3),
+            ),
+            result.rooms
+        )
+    }
+
+    @Test
+    fun `getStaysBriefing leaves non-combo room name unchanged`() {
+        stayService.upsertStays(listOf(briefingRequestWithRoom("Jade Vine Suite", 2)))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(listOf(RoomNights("Jade Vine Suite", 2)), result.rooms)
     }
 }

@@ -35,7 +35,7 @@ fun Email.toResponse() = EmailResponse(address = address, addedAt = addedAt)
 
 fun Address.toResponse() = AddressResponse(street = street, city = city, state = state, zip = zip, country = country, addedAt = addedAt)
 
-fun Stay.toBriefingResponse(previousStays: List<Stay>) = StayBriefingResponse(
+fun Stay.toBriefingResponse(previousStays: List<Stay>, roomCombos: Map<String, List<String>> = emptyMap()) = StayBriefingResponse(
     primaryGuestName = primaryGuestName,
     additionalGuestName = additionalGuestName,
     specialAccommodations = specialAccommodations,
@@ -46,14 +46,18 @@ fun Stay.toBriefingResponse(previousStays: List<Stay>) = StayBriefingResponse(
     checkIn = checkIn,
     checkOut = checkOut,
     nights = ChronoUnit.DAYS.between(checkIn, checkOut),
-    room = invoice?.items?.firstOrNull { it.type == "Room" }?.name,
+    rooms = invoice?.items?.filter { it.type == "Room" }
+        ?.groupBy { it.name }
+        ?.mapNotNull { (name, items) -> name?.let { RoomNights(it, items.size) } }
+        ?.flatMap { rn -> roomCombos[rn.name.lowercase()]?.map { RoomNights(it, rn.nights) } ?: listOf(rn) }
+        ?: emptyList(),
     addons = invoice?.items?.filter { it.type != "Room" }?.map { it.type } ?: emptyList(),
     guestNotes = guest?.notes,
     phones = guest?.phones?.map { it.number } ?: emptyList(),
     previousStayCount = previousStays.size,
     lastStay = previousStays.firstOrNull()?.let {
         LastStayResponse(
-            room = it.invoice?.items?.firstOrNull { item -> item.type == "Room" }?.name,
+            rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
             checkIn = it.checkIn,
             checkOut = it.checkOut
         )

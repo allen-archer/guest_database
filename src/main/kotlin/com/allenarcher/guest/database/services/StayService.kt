@@ -1,5 +1,6 @@
 package com.allenarcher.guest.database.services
 
+import com.allenarcher.guest.database.GuestDatabaseProperties
 import com.allenarcher.guest.database.GuestRepository
 import com.allenarcher.guest.database.StayRepository
 import com.allenarcher.guest.database.models.*
@@ -10,7 +11,8 @@ import java.time.LocalDate
 @Service
 class StayService(
     private val stayRepository: StayRepository,
-    private val guestRepository: GuestRepository
+    private val guestRepository: GuestRepository,
+    private val properties: GuestDatabaseProperties
 ) {
     @Transactional
     fun upsertStays(requests: List<UpsertStayRequest>): List<StayResponse> =
@@ -64,7 +66,7 @@ class StayService(
                     stayRepository.findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED)
                         .filter { it.id != stay.id }
                 } ?: emptyList()
-                stay.toBriefingResponse(previousStays)
+                stay.toBriefingResponse(previousStays, properties.roomCombos)
             }
 
     @Transactional(readOnly = true)

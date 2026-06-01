@@ -103,7 +103,7 @@ class GuestServiceTests {
         createFullStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite")
         val history = guestService.getGuestHistory(5001L)
         assertEquals(2, history.previousStayCount)
-        assertEquals("Jade Vine Suite", history.lastStay?.room)
+        assertEquals("Jade Vine Suite", history.lastStay?.rooms?.firstOrNull())
         assertEquals(LocalDate.of(2025, 6, 1), history.lastStay?.checkIn)
         assertEquals(LocalDate.of(2025, 6, 5), history.lastStay?.checkOut)
     }
@@ -114,7 +114,7 @@ class GuestServiceTests {
         createFullStay(1002L, 5001L, LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 5), "Jade Vine Suite", StayStatus.CANCELED)
         val history = guestService.getGuestHistory(5001L)
         assertEquals(1, history.previousStayCount)
-        assertEquals("Willow Cottage", history.lastStay?.room)
+        assertEquals("Willow Cottage", history.lastStay?.rooms?.firstOrNull())
     }
 
     @Test

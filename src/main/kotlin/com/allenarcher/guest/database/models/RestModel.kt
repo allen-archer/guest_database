@@ -68,6 +68,8 @@ data class GuestResponse(
     val addresses: List<AddressResponse>
 )
 
+data class RoomNights(val name: String, val nights: Int)
+
 data class StayBriefingResponse(
     val primaryGuestName: String,
     val additionalGuestName: String?,
@@ -79,7 +81,7 @@ data class StayBriefingResponse(
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val nights: Long,
-    val room: String?,
+    val rooms: List<RoomNights>,
     val addons: List<String>,
     val guestNotes: String?,
     val phones: List<String>,
@@ -93,7 +95,7 @@ data class GuestHistoryResponse(
 )
 
 data class LastStayResponse(
-    val room: String?,
+    val rooms: List<String>,
     val checkIn: LocalDate,
     val checkOut: LocalDate
 )
