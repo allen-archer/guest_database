@@ -33,6 +33,14 @@ data class UpsertStayRequest(
     val guest: UpsertGuestData? = null
 )
 
+data class UpsertByConfirmationRequest(
+    val confirmationCode: String,
+    val primaryGuestName: String,
+    val checkIn: LocalDate,
+    val checkOut: LocalDate,
+    val invoice: CreateInvoiceRequest
+)
+
 data class UpsertGuestData(
     val externalId: Long,
     val name: String,
@@ -106,7 +114,7 @@ data class LastStayResponse(
 
 data class StayResponse(
     val id: Long,
-    val externalId: Long,
+    val externalId: Long?,
     val confirmationCode: String?,
     val primaryGuestName: String,
     val status: StayStatus,

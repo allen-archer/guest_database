@@ -30,7 +30,7 @@ class Stay(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
     @Column(unique = true)
-    var externalId: Long,
+    var externalId: Long?,
     @Column(unique = true)
     var confirmationCode: String?,
     var primaryGuestName: String,

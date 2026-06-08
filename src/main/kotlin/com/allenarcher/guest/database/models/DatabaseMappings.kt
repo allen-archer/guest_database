@@ -33,6 +33,18 @@ fun CreateInvoiceRequest.toDatabase(stay: Stay) = Invoice(
     countyTax = countyTax
 )
 
+fun UpsertByConfirmationRequest.toDatabase(): Stay {
+    val stay = Stay(
+        externalId = null,
+        confirmationCode = confirmationCode,
+        primaryGuestName = primaryGuestName,
+        checkIn = checkIn,
+        checkOut = checkOut
+    )
+    stay.invoice = invoice.toDatabase(stay)
+    return stay
+}
+
 fun UpsertStayRequest.toDatabase(): Stay {
     val stay = Stay(
         externalId = externalId,

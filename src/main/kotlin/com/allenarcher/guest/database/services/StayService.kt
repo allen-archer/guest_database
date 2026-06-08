@@ -74,6 +74,29 @@ class StayService(
         stayRepository.findByGuestIsNull().map { it.toResponse() }
 
     @Transactional
+    fun upsertByConfirmation(request: UpsertByConfirmationRequest): StayResponse {
+        val existing = stayRepository.findByConfirmationCode(request.confirmationCode)
+            ?: return stayRepository.save(request.toDatabase()).toResponse()
+
+        val requestItems = request.invoice.items.map { it.toDatabase() }
+        val inv = existing.invoice
+        val changed = existing.primaryGuestName != request.primaryGuestName ||
+            existing.checkIn != request.checkIn ||
+            existing.checkOut != request.checkOut ||
+            inv == null || inv.stateTax != request.invoice.stateTax || inv.countyTax != request.invoice.countyTax || inv.items != requestItems
+
+        if (!changed) return existing.toResponse()
+
+        existing.primaryGuestName = request.primaryGuestName
+        existing.checkIn = request.checkIn
+        existing.checkOut = request.checkOut
+        inv?.also { it.stateTax = request.invoice.stateTax; it.countyTax = request.invoice.countyTax; it.items.clear(); it.items.addAll(requestItems) }
+            ?: run { existing.invoice = request.invoice.toDatabase(existing) }
+
+        return stayRepository.save(existing).toResponse()
+    }
+
+    @Transactional
     fun updateInvoice(request: UpdateInvoiceRequest): StayResponse {
         val stay = stayRepository.findByConfirmationCode(request.confirmationId)
             ?: throw IllegalArgumentException("Stay not found: confirmationId=${request.confirmationId}")

@@ -523,4 +523,131 @@ class StayServiceTests {
         val count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM invoice_items", Int::class.java)!!
         assertEquals(1, count)
     }
+
+    private fun confirmationRequest(
+        confirmationCode: String = "CONF001",
+        primaryGuestName: String = "Alice",
+        checkIn: LocalDate = LocalDate.of(2026, 6, 1),
+        checkOut: LocalDate = LocalDate.of(2026, 6, 5),
+        items: List<InvoiceItemRequest> = listOf(roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1))),
+        stateTax: BigDecimal = BigDecimal("0.06"),
+        countyTax: BigDecimal = BigDecimal("0.01")
+    ) = UpsertByConfirmationRequest(
+        confirmationCode = confirmationCode,
+        primaryGuestName = primaryGuestName,
+        checkIn = checkIn,
+        checkOut = checkOut,
+        invoice = CreateInvoiceRequest(items = items, stateTax = stateTax, countyTax = countyTax)
+    )
+
+    @Test
+    fun `upsertByConfirmation creates new stay when confirmation code not found`() {
+        val result = stayService.upsertByConfirmation(confirmationRequest())
+        assertEquals("CONF001", result.confirmationCode)
+        assertEquals("Alice", result.primaryGuestName)
+        assertEquals(LocalDate.of(2026, 6, 1), result.checkIn)
+        assertEquals(LocalDate.of(2026, 6, 5), result.checkOut)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation new stay has null externalId`() {
+        val result = stayService.upsertByConfirmation(confirmationRequest())
+        assertNull(result.externalId)
+    }
+
+    @Test
+    fun `upsertByConfirmation returns existing stay unchanged when nothing changed`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val dbCountBefore = stayRepository.count()
+        stayService.upsertByConfirmation(confirmationRequest())
+        assertEquals(dbCountBefore, stayRepository.count())
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation updates when primaryGuestName changes`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val result = stayService.upsertByConfirmation(confirmationRequest(primaryGuestName = "Bob"))
+        assertEquals("Bob", result.primaryGuestName)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation updates when checkIn changes`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val result = stayService.upsertByConfirmation(confirmationRequest(checkIn = LocalDate.of(2026, 6, 2)))
+        assertEquals(LocalDate.of(2026, 6, 2), result.checkIn)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation updates when checkOut changes`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val result = stayService.upsertByConfirmation(confirmationRequest(checkOut = LocalDate.of(2026, 6, 7)))
+        assertEquals(LocalDate.of(2026, 6, 7), result.checkOut)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation updates when invoice items change`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val result = stayService.upsertByConfirmation(confirmationRequest(
+            items = listOf(
+                roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1)),
+                roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 2))
+            )
+        ))
+        assertEquals(2, result.invoice.items.size)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation updates when tax changes`() {
+        stayService.upsertByConfirmation(confirmationRequest())
+        val result = stayService.upsertByConfirmation(confirmationRequest(stateTax = BigDecimal("9.00"), countyTax = BigDecimal("3.00")))
+        assertEquals(BigDecimal("9.00"), result.invoice.stateTax)
+        assertEquals(BigDecimal("3.00"), result.invoice.countyTax)
+        assertEquals(1, stayRepository.count())
+    }
+
+    @Test
+    fun `upsertByConfirmation does not overwrite externalId on existing stay`() {
+        stayService.upsertStays(listOf(upsertStayRequest(
+            externalId = 1001L,
+            confirmationCode = "CONF001",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5)
+        )))
+        val result = stayService.upsertByConfirmation(confirmationRequest(primaryGuestName = "Bob"))
+        assertEquals(1001L, result.externalId)
+    }
+
+    @Test
+    fun `upsertByConfirmation does not overwrite guest on existing stay`() {
+        stayService.upsertStays(listOf(upsertStayRequest(
+            externalId = 1001L,
+            confirmationCode = "CONF001",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))
+        val result = stayService.upsertByConfirmation(confirmationRequest(primaryGuestName = "Bob"))
+        assertNotNull(result.guest)
+        assertEquals(5001L, result.guest!!.externalId)
+    }
+
+    @Test
+    fun `upsertByConfirmation leaves no orphaned invoice items`() {
+        stayService.upsertByConfirmation(confirmationRequest(items = listOf(
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1)),
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 2)),
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 3))
+        )))
+        stayService.upsertByConfirmation(confirmationRequest(items = listOf(
+            roomItem("Dogwood Suite", LocalDate.of(2026, 6, 1))
+        )))
+        val count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM invoice_items", Int::class.java)!!
+        assertEquals(1, count)
+    }
 }

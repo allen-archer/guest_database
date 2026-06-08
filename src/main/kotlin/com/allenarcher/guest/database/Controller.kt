@@ -27,6 +27,10 @@ class Controller(
     fun upsertStays(@RequestBody requests: List<UpsertStayRequest>): List<StayResponse> =
         stayService.upsertStays(requests)
 
+    @PostMapping("/stays/upsert-by-confirmation")
+    fun upsertByConfirmation(@RequestBody request: UpsertByConfirmationRequest): StayResponse =
+        stayService.upsertByConfirmation(request)
+
     @GetMapping("/stays")
     fun getStays(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) from: LocalDate,
