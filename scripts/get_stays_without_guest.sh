@@ -1,1 +1,1 @@
-curl -s "http://localhost:8080/stays/without-guest" | jq
+curl -s -u reader:changeme "http://localhost:8080/stays/without-guest" | jq

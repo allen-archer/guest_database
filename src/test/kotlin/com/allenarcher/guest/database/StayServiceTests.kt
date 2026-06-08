@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -20,6 +21,7 @@ class StayServiceTests {
     @Autowired lateinit var stayService: StayService
     @Autowired lateinit var stayRepository: StayRepository
     @Autowired lateinit var guestRepository: GuestRepository
+    @Autowired lateinit var jdbcTemplate: JdbcTemplate
 
     @BeforeEach
     fun setUp() {
@@ -33,6 +35,7 @@ class StayServiceTests {
         confirmationCode: String? = null,
         checkIn: LocalDate,
         checkOut: LocalDate,
+        roomName: String = "Jade Vine Suite",
         guest: UpsertGuestData? = null
     ) = UpsertStayRequest(
         externalId = externalId,
@@ -41,7 +44,7 @@ class StayServiceTests {
         checkIn = checkIn,
         checkOut = checkOut,
         invoice = CreateInvoiceRequest(
-            items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
+            items = listOf(InvoiceItemRequest("Room", roomName, 1, BigDecimal("150.00"), checkIn)),
             stateTax = BigDecimal("0.06"),
             countyTax = BigDecimal("0.01")
         ),
@@ -145,7 +148,7 @@ class StayServiceTests {
             housekeepingNotes = "No disturbance",
             reasonForStay = "Anniversary",
             invoice = CreateInvoiceRequest(
-                items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
+                items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), date = LocalDate.of(2026, 6, 1))),
                 stateTax = BigDecimal("0.06"),
                 countyTax = BigDecimal("0.01")
             ),
@@ -231,15 +234,86 @@ class StayServiceTests {
     @Test
     fun `cancelStay sets status to CANCELED`() {
         stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
-        val result = stayService.cancelStay(1001L)
+        val result = stayService.cancelStay(listOf(RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 6, 1))))
         assertEquals(StayStatus.CANCELED, result.status)
     }
 
     @Test
-    fun `cancelStay throws when stay not found`() {
+    fun `cancelStay throws when no stay matches`() {
+        stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
         assertThrows(IllegalArgumentException::class.java) {
-            stayService.cancelStay(9999L)
+            stayService.cancelStay(listOf(RoomDateRequest(room = "Nonexistent Room", date = LocalDate.of(2026, 6, 1))))
         }
+    }
+
+    @Test
+    fun `cancelStay does not cancel a stay with a different room name`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Jade Vine Suite"),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Dogwood Suite")
+        ))
+        stayService.cancelStay(listOf(RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 6, 1))))
+        val remaining = stayService.getStaysInRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        assertEquals(StayStatus.CANCELED, remaining.first { it.externalId == 1001L }.status)
+        assertEquals(StayStatus.SCHEDULED, remaining.first { it.externalId == 1002L }.status)
+    }
+
+    @Test
+    fun `cancelStay does not cancel a stay with a different check-in date`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5))
+        ))
+        stayService.cancelStay(listOf(RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 6, 1))))
+        val remaining = stayService.getStaysInRange(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
+        assertEquals(StayStatus.CANCELED, remaining.first { it.externalId == 1001L }.status)
+        assertEquals(StayStatus.SCHEDULED, remaining.first { it.externalId == 1002L }.status)
+    }
+
+    @Test
+    fun `cancelStay throws when room nights do not exactly match`() {
+        stayService.upsertStays(listOf(UpsertStayRequest(
+            externalId = 1001L,
+            primaryGuestName = "Alice",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 3),
+            invoice = CreateInvoiceRequest(
+                items = listOf(
+                    InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1)),
+                    InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 2))
+                ),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            )
+        )))
+        assertThrows(IllegalArgumentException::class.java) {
+            stayService.cancelStay(listOf(
+                RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 6, 1))
+            ))
+        }
+    }
+
+    @Test
+    fun `cancelStay cancels a multi-room stay`() {
+        stayService.upsertStays(listOf(UpsertStayRequest(
+            externalId = 1001L,
+            primaryGuestName = "Alice",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            invoice = CreateInvoiceRequest(
+                items = listOf(
+                    InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1)),
+                    InvoiceItemRequest("Room", "Gum Tree Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))
+                ),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            )
+        )))
+        val result = stayService.cancelStay(listOf(
+            RoomDateRequest(room = "Jade Vine Suite", LocalDate.of(2026, 6, 1)),
+            RoomDateRequest(room = "Gum Tree Suite", LocalDate.of(2026, 6, 1))
+        ))
+        assertEquals(StayStatus.CANCELED, result.status)
     }
 
     @Test
@@ -255,7 +329,7 @@ class StayServiceTests {
             upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)),
             upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 7, 1), checkOut = LocalDate.of(2026, 7, 5))
         ))
-        stayService.cancelStay(1002L)
+        stayService.cancelStay(listOf(RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 7, 1))))
         val results = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))
         assertEquals(1, results.size)
     }
@@ -385,5 +459,68 @@ class StayServiceTests {
         stayService.upsertStays(listOf(briefingRequestWithRoom("Jade Vine Suite", 2)))
         val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
         assertEquals(listOf(RoomNights("Jade Vine Suite", 2)), result.rooms)
+    }
+
+    private fun stayWithConfirmationCode(confirmationCode: String, rooms: List<InvoiceItemRequest>) = UpsertStayRequest(
+        externalId = 1001L,
+        primaryGuestName = "Alice",
+        confirmationCode = confirmationCode,
+        checkIn = LocalDate.of(2026, 6, 1),
+        checkOut = LocalDate.of(2026, 6, 1).plusDays(rooms.size.toLong()),
+        invoice = CreateInvoiceRequest(items = rooms, stateTax = BigDecimal("0.06"), countyTax = BigDecimal("0.01"))
+    )
+
+    private fun roomItem(name: String, date: LocalDate) =
+        InvoiceItemRequest("Room", name, 1, BigDecimal("150.00"), date)
+
+    @Test
+    fun `updateInvoice replaces invoice items`() {
+        stayService.upsertStays(listOf(stayWithConfirmationCode("CONF001", listOf(
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1))
+        ))))
+        val result = stayService.updateInvoice(UpdateInvoiceRequest(
+            confirmationId = "CONF001",
+            invoice = CreateInvoiceRequest(
+                items = listOf(
+                    roomItem("Dogwood Suite", LocalDate.of(2026, 6, 1)),
+                    roomItem("Dogwood Suite", LocalDate.of(2026, 6, 2))
+                ),
+                stateTax = BigDecimal("12.00"),
+                countyTax = BigDecimal("4.00")
+            )
+        ))
+        assertEquals(2, result.invoice.items.size)
+        assertTrue(result.invoice.items.all { it.name == "Dogwood Suite" })
+        assertEquals(BigDecimal("12.00"), result.invoice.stateTax)
+        assertEquals(BigDecimal("4.00"), result.invoice.countyTax)
+    }
+
+    @Test
+    fun `updateInvoice throws when confirmation code not found`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            stayService.updateInvoice(UpdateInvoiceRequest(
+                confirmationId = "NONEXISTENT",
+                invoice = CreateInvoiceRequest(emptyList(), BigDecimal("0.00"), BigDecimal("0.00"))
+            ))
+        }
+    }
+
+    @Test
+    fun `updateInvoice leaves no orphaned invoice items`() {
+        stayService.upsertStays(listOf(stayWithConfirmationCode("CONF001", listOf(
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1)),
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 2)),
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 3))
+        ))))
+        stayService.updateInvoice(UpdateInvoiceRequest(
+            confirmationId = "CONF001",
+            invoice = CreateInvoiceRequest(
+                items = listOf(roomItem("Dogwood Suite", LocalDate.of(2026, 6, 1))),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            )
+        ))
+        val count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM invoice_items", Int::class.java)!!
+        assertEquals(1, count)
     }
 }

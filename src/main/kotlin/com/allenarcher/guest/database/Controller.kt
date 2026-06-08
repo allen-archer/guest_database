@@ -42,9 +42,13 @@ class Controller(
     @GetMapping("/stays/without-guest")
     fun getStaysWithoutGuest(): List<StayResponse> = stayService.getStaysWithoutGuest()
 
-    @PostMapping("/stays/{externalId}/cancel")
-    fun cancelStay(@PathVariable externalId: Long): StayResponse =
-        stayService.cancelStay(externalId)
+    @PostMapping("/stays/update-invoice")
+    fun updateInvoice(@RequestBody request: UpdateInvoiceRequest): StayResponse =
+        stayService.updateInvoice(request)
+
+    @PostMapping("/stays/cancel")
+    fun cancelStay(@RequestBody rooms: List<RoomDateRequest>): StayResponse =
+        stayService.cancelStay(rooms)
 
     @PostMapping("/database/backup")
     fun backup(): String = backupService.backup()

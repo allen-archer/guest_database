@@ -1,1 +1,1 @@
-curl -s http://localhost:8080/guests/5001/history | jq
+curl -s -u reader:changeme http://localhost:8080/guests/5001/history | jq

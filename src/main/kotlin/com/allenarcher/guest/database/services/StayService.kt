@@ -74,9 +74,30 @@ class StayService(
         stayRepository.findByGuestIsNull().map { it.toResponse() }
 
     @Transactional
-    fun cancelStay(externalId: Long): StayResponse {
-        val stay = stayRepository.findByExternalId(externalId)
-            ?: throw IllegalArgumentException("Stay not found: externalId=$externalId")
+    fun updateInvoice(request: UpdateInvoiceRequest): StayResponse {
+        val stay = stayRepository.findByConfirmationCode(request.confirmationId)
+            ?: throw IllegalArgumentException("Stay not found: confirmationId=${request.confirmationId}")
+        stay.invoice?.also {
+            it.stateTax = request.invoice.stateTax
+            it.countyTax = request.invoice.countyTax
+            it.items.clear()
+            it.items.addAll(request.invoice.items.map { item -> item.toDatabase() })
+        } ?: run { stay.invoice = request.invoice.toDatabase(stay) }
+        return stayRepository.save(stay).toResponse()
+    }
+
+    @Transactional
+    fun cancelStay(rooms: List<RoomDateRequest>): StayResponse {
+        val requestedCounts = rooms.groupingBy { it.room }.eachCount()
+        val stay = rooms.map { it.date }.distinct()
+            .flatMap { stayRepository.findByCheckInEquals(it) }
+            .find { stay ->
+                val stayCounts = stay.invoice?.items
+                    ?.filter { it.type == "Room" }
+                    ?.groupingBy { it.name ?: "" }
+                    ?.eachCount() ?: emptyMap()
+                stayCounts == requestedCounts
+            } ?: throw IllegalArgumentException("No stay found with room nights exactly matching: $requestedCounts")
         stay.status = StayStatus.CANCELED
         return stayRepository.save(stay).toResponse()
     }

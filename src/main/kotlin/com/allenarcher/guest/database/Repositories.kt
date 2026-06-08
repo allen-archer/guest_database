@@ -23,6 +23,8 @@ interface StayRepository : JpaRepository<Stay, Long> {
     ): List<Stay>
 
     fun findByExternalId(externalId: Long): Stay?
+    fun findByConfirmationCode(confirmationCode: String): Stay?
     fun findByGuestIsNull(): List<Stay>
+    fun findByCheckInEquals(checkIn: LocalDate): List<Stay>
     fun findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guestExternalId: Long, status: StayStatus): List<Stay>
 }

@@ -3,6 +3,10 @@ package com.allenarcher.guest.database.models
 import java.math.BigDecimal
 import java.time.LocalDate
 
+data class UpdateInvoiceRequest(val confirmationId: String, val invoice: CreateInvoiceRequest)
+
+data class RoomDateRequest(val room: String, val date: LocalDate)
+
 data class CreateGuestRequest(
     val name: String,
     val externalId: Long,
