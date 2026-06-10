@@ -496,6 +496,26 @@ class StayServiceTests {
     }
 
     @Test
+    fun `updateInvoice derives checkIn and checkOut from invoice item dates`() {
+        stayService.upsertStays(listOf(stayWithConfirmationCode("CONF001", listOf(
+            roomItem("Jade Vine Suite", LocalDate.of(2026, 6, 1))
+        ))))
+        val result = stayService.updateInvoice(UpdateInvoiceRequest(
+            confirmationId = "CONF001",
+            invoice = CreateInvoiceRequest(
+                items = listOf(
+                    roomItem("Gum Tree Suite", LocalDate.of(2026, 8, 1)),
+                    roomItem("Gum Tree Suite", LocalDate.of(2026, 8, 2))
+                ),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            )
+        ))
+        assertEquals(LocalDate.of(2026, 8, 1), result.checkIn)
+        assertEquals(LocalDate.of(2026, 8, 3), result.checkOut)
+    }
+
+    @Test
     fun `updateInvoice throws when confirmation code not found`() {
         assertThrows(IllegalArgumentException::class.java) {
             stayService.updateInvoice(UpdateInvoiceRequest(

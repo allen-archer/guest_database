@@ -100,12 +100,16 @@ class StayService(
     fun updateInvoice(request: UpdateInvoiceRequest): StayResponse {
         val stay = stayRepository.findByConfirmationCode(request.confirmationId)
             ?: throw IllegalArgumentException("Stay not found: confirmationId=${request.confirmationId}")
+        val items = request.invoice.items.map { it.toDatabase() }
         stay.invoice?.also {
             it.stateTax = request.invoice.stateTax
             it.countyTax = request.invoice.countyTax
             it.items.clear()
-            it.items.addAll(request.invoice.items.map { item -> item.toDatabase() })
+            it.items.addAll(items)
         } ?: run { stay.invoice = request.invoice.toDatabase(stay) }
+        val dates = items.map { it.date }
+        stay.checkIn = dates.min()
+        stay.checkOut = dates.max().plusDays(1)
         return stayRepository.save(stay).toResponse()
     }
 

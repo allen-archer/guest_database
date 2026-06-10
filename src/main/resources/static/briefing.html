@@ -370,11 +370,10 @@
   }
 
   function initDates() {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const end = new Date(tomorrow);
-    end.setDate(end.getDate() + 6);
-    document.getElementById('fromDate').value = fmtDate(tomorrow);
+    const today = new Date();
+    const end = new Date(today);
+    end.setDate(end.getDate() + 7);
+    document.getElementById('fromDate').value = fmtDate(today);
     document.getElementById('toDate').value = fmtDate(end);
   }
 
