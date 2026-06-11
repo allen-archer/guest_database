@@ -163,6 +163,21 @@ class StayServiceTests {
     }
 
     @Test
+    fun `upsertStays enriches stay created by confirmation email`() {
+        stayService.upsertByConfirmation(confirmationRequest(confirmationCode = "CONF001"))
+        val result = stayService.upsertStays(listOf(upsertStayRequest(
+            externalId = 9001L,
+            confirmationCode = "CONF001",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            guest = fullGuestData()
+        )))[0]
+        assertEquals(1, stayRepository.count())
+        assertEquals(9001L, result.externalId)
+        assertNotNull(result.guest)
+    }
+
+    @Test
     fun `upsertStays links guest on second call`() {
         stayService.upsertStays(listOf(upsertStayRequest(checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))))
         val result = stayService.upsertStays(listOf(upsertStayRequest(

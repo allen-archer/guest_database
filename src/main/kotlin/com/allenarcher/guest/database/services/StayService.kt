@@ -17,7 +17,9 @@ class StayService(
     @Transactional
     fun upsertStays(requests: List<UpsertStayRequest>): List<StayResponse> =
         requests.map { request ->
-            val stay = stayRepository.findByExternalId(request.externalId) ?: request.toDatabase()
+            val stay = stayRepository.findByExternalId(request.externalId)
+                ?: (request.confirmationCode?.let { stayRepository.findByConfirmationCode(it) } ?: request.toDatabase())
+            stay.externalId = request.externalId
             stay.confirmationCode = request.confirmationCode
             stay.primaryGuestName = request.primaryGuestName
             stay.status = request.status
