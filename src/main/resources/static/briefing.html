@@ -160,6 +160,11 @@
       box-shadow: 0 2px 10px rgba(0,0,0,0.5);
       display: flex;
       flex-direction: column;
+      text-decoration: none;
+    }
+
+    a.card:hover {
+      outline: 2px solid var(--accent);
     }
 
     .card-header {
@@ -451,6 +456,10 @@
   function renderCard(s, room, isPrimary) {
     const returning = s.previousStayCount > 0
       ? `<span class="returning-badge">Returning &times;${s.previousStayCount}</span>` : '';
+    const tag = s.externalId ? 'a' : 'div';
+    const tagAttrs = s.externalId
+      ? `href="https://manage.thinkreservations.com/reservations/${s.externalId}" target="_blank" rel="noopener noreferrer"`
+      : '';
 
     const header = `
       <div class="card-header">
@@ -469,10 +478,10 @@
 
     if (!isPrimary) {
       return `
-        <div class="card">
+        <${tag} class="card" ${tagAttrs}>
           ${header}
           <div class="card-body">${guestBlock}</div>
-        </div>`;
+        </${tag}>`;
     }
 
     const rows = [];
@@ -520,13 +529,13 @@
       </div>`);
 
     return `
-      <div class="card">
+      <${tag} class="card" ${tagAttrs}>
         ${header}
         <div class="card-body">
           ${guestBlock}
           ${rows.join('')}
         </div>
-      </div>`;
+      </${tag}>`;
   }
 
   function renderCalendar(data, from, to) {

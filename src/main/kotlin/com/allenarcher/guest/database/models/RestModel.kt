@@ -83,6 +83,7 @@ data class GuestResponse(
 data class RoomNights(val name: String, val nights: Int)
 
 data class StayBriefingResponse(
+    val externalId: Long?,
     val primaryGuestName: String,
     val additionalGuestName: String?,
     val specialAccommodations: String?,

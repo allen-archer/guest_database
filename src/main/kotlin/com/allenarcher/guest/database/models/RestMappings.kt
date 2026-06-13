@@ -36,6 +36,7 @@ fun Email.toResponse() = EmailResponse(address = address, addedAt = addedAt)
 fun Address.toResponse() = AddressResponse(street = street, city = city, state = state, zip = zip, country = country, addedAt = addedAt)
 
 fun Stay.toBriefingResponse(previousStays: List<Stay>, roomCombos: Map<String, List<String>> = emptyMap()) = StayBriefingResponse(
+    externalId = externalId,
     primaryGuestName = primaryGuestName,
     additionalGuestName = additionalGuestName,
     specialAccommodations = specialAccommodations,
