@@ -350,6 +350,16 @@ class StayServiceTests {
     }
 
     @Test
+    fun `getStaysBriefing includes stay whose checkout is outside the range`() {
+        stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 6, 28),
+            checkOut = LocalDate.of(2026, 7, 3)
+        )))
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+        assertEquals(1, results.size)
+    }
+
+    @Test
     fun `getStaysBriefing excludes stays outside range`() {
         stayService.upsertStays(listOf(
             upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5)),

@@ -62,7 +62,7 @@ class StayService(
 
     @Transactional(readOnly = true)
     fun getStaysBriefing(from: LocalDate, to: LocalDate): List<StayBriefingResponse> =
-        stayRepository.findByCheckInGreaterThanEqualAndCheckOutLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
+        stayRepository.findByCheckInGreaterThanEqualAndCheckInLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
             .map { stay ->
                 val previousStays = stay.guest?.let { guest ->
                     stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, stay.checkIn)

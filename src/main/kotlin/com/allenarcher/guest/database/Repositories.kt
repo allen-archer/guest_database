@@ -16,7 +16,7 @@ interface StayRepository : JpaRepository<Stay, Long> {
         to: LocalDate
     ): List<Stay>
 
-    fun findByCheckInGreaterThanEqualAndCheckOutLessThanEqualAndStatus(
+    fun findByCheckInGreaterThanEqualAndCheckInLessThanEqualAndStatus(
         from: LocalDate,
         to: LocalDate,
         status: StayStatus
