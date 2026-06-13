@@ -118,6 +118,15 @@ class GuestServiceTests {
     }
 
     @Test
+    fun `getGuestHistory does not count future stays`() {
+        createFullStay(1001L, 5001L, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 3), "Willow Cottage")
+        createFullStay(1002L, 5001L, LocalDate.now().plusDays(30), LocalDate.now().plusDays(34), "Jade Vine Suite")
+        val history = guestService.getGuestHistory(5001L)
+        assertEquals(1, history.previousStayCount)
+        assertEquals("Willow Cottage", history.lastStay?.rooms?.firstOrNull())
+    }
+
+    @Test
     fun `getGuestHistory returns null lastStay when no stays`() {
         val history = guestService.getGuestHistory(9999L)
         assertEquals(0, history.previousStayCount)

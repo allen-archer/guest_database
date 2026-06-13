@@ -65,8 +65,7 @@ class StayService(
         stayRepository.findByCheckInGreaterThanEqualAndCheckOutLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
             .map { stay ->
                 val previousStays = stay.guest?.let { guest ->
-                    stayRepository.findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED)
-                        .filter { it.id != stay.id }
+                    stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, stay.checkIn)
                 } ?: emptyList()
                 stay.toBriefingResponse(previousStays, properties.roomCombos)
             }

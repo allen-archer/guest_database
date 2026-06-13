@@ -5,6 +5,7 @@ import com.allenarcher.guest.database.StayRepository
 import com.allenarcher.guest.database.models.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 
 @Service
 class GuestService(
@@ -18,7 +19,7 @@ class GuestService(
 
     @Transactional(readOnly = true)
     fun getGuestHistory(guestExternalId: Long): GuestHistoryResponse {
-        val stays = stayRepository.findByGuest_ExternalIdAndStatusNotOrderByCheckInDesc(guestExternalId, StayStatus.CANCELED)
+        val stays = stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guestExternalId, StayStatus.CANCELED, LocalDate.now())
         val lastStay = stays.firstOrNull()?.let {
             LastStayResponse(
                 rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),

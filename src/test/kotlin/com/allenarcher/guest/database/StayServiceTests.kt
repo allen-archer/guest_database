@@ -410,6 +410,18 @@ class StayServiceTests {
     }
 
     @Test
+    fun `getStaysBriefing does not count future stays as previous stays`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 3), guest = fullGuestData()),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 10), checkOut = LocalDate.of(2026, 6, 14), guest = fullGuestData()),
+            upsertStayRequest(externalId = 1003L, checkIn = LocalDate.of(2027, 8, 1), checkOut = LocalDate.of(2027, 8, 5), guest = fullGuestData())
+        ))
+        val result = stayService.getStaysBriefing(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))[0]
+        assertEquals(1, result.previousStayCount)
+        assertEquals(LocalDate.of(2025, 1, 1), result.lastStay?.checkIn)
+    }
+
+    @Test
     fun `getStaysBriefing returns correct history for returning guest`() {
         stayService.upsertStays(listOf(
             upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 3), guest = fullGuestData()),
