@@ -110,28 +110,6 @@
       color: #fca5a5;
     }
 
-    .summary-bar {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-
-    .summary-chip {
-      background: var(--surface);
-      border-left: 3px solid var(--accent);
-      padding: 0.5rem 1rem;
-      border-radius: 3px;
-      font-size: 1rem;
-      color: var(--muted);
-    }
-
-    .summary-chip strong {
-      color: var(--text);
-      font-size: 1.1rem;
-      display: block;
-    }
-
     .date-group {
       margin-bottom: 2rem;
     }
@@ -357,7 +335,6 @@
 
 <main>
   <div id="status">Loading...</div>
-  <div id="summary" class="summary-bar" style="display:none"></div>
   <div id="calendar" style="display:none"></div>
   <div id="content"></div>
 </main>
@@ -390,14 +367,12 @@
     const to = document.getElementById('toDate').value;
     const status = document.getElementById('status');
     const content = document.getElementById('content');
-    const summary = document.getElementById('summary');
 
     status.textContent = 'Loading...';
     status.className = '';
     status.style.display = 'block';
     content.innerHTML = '';
     document.getElementById('calendar').innerHTML = '';
-    summary.style.display = 'none';
 
     try {
       const extFrom = new Date(from + 'T00:00:00');
@@ -415,18 +390,6 @@
         content.innerHTML = '<div class="no-results">No stays found for this period.</div>';
         return;
       }
-
-      // Summary bar
-      const rooms = new Set(visibleData.flatMap(s => s.rooms.map(r => r.name))).size;
-      const totalNights = visibleData.flatMap(s => s.rooms).reduce((a, r) => a + r.nights, 0);
-      const checkIns = visibleData.filter(s => s.checkIn >= from && s.checkIn <= to).length;
-      summary.innerHTML = `
-        <div class="summary-chip"><strong>${visibleData.length}</strong>Stay${visibleData.length !== 1 ? 's' : ''}</div>
-        <div class="summary-chip"><strong>${rooms}</strong>Room${rooms !== 1 ? 's' : ''}</div>
-        <div class="summary-chip"><strong>${checkIns}</strong>Arriving</div>
-        <div class="summary-chip"><strong>${totalNights}</strong>Guest Night${totalNights !== 1 ? 's' : ''}</div>
-      `;
-      summary.style.display = 'flex';
 
       // Group by check-in date (only visible stays in cards)
       const groups = {};
