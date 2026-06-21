@@ -148,6 +148,41 @@
       outline: 2px solid var(--accent);
     }
 
+
+    .checkout-badge {
+      font-size: 0.82rem;
+      background: var(--rose);
+      color: #fff;
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+    }
+
+    .inhouse-badge {
+      font-size: 0.82rem;
+      background: var(--green);
+      color: #111;
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+    }
+
+    .card-inhouse .card-header {
+      border-bottom-color: var(--green);
+    }
+
+    .inhouse-section {
+      margin-bottom: 2rem;
+    }
+
+    .inhouse-section-header {
+      font-size: 0.9rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
     .card-header {
       background: var(--card-hdr);
       border-bottom: 2px solid var(--accent);
@@ -375,38 +410,52 @@
     document.getElementById('calendar').innerHTML = '';
 
     try {
-      const extFrom = new Date(from + 'T00:00:00');
-      extFrom.setDate(extFrom.getDate() - 7);
-      const extFromStr = fmtDate(extFrom);
-
-      const res = await fetch(`${API}?from=${extFromStr}&to=${to}`);
+      const res = await fetch(`${API}?from=${from}&to=${to}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const visibleData = data.filter(s => s.checkIn >= from);
+      const checkInStays  = data.filter(s => s.checkIn >= from && s.checkIn <= to);
+      const checkOutStays = data.filter(s => s.checkOut >= from && s.checkOut <= to);
+      const inHouseStays  = data.filter(s => s.checkIn < from && s.checkOut > to);
 
       status.style.display = 'none';
 
-      if (!visibleData.length) {
+      if (!checkInStays.length && !checkOutStays.length && !inHouseStays.length) {
         content.innerHTML = '<div class="no-results">No stays found for this period.</div>';
         return;
       }
 
-      // Group by check-in date (only visible stays in cards)
+      // Group by date: check-ins by checkIn, check-outs by checkOut
       const groups = {};
-      visibleData.forEach(stay => {
-        if (!groups[stay.checkIn]) groups[stay.checkIn] = [];
-        groups[stay.checkIn].push(stay);
+      checkInStays.forEach(stay => {
+        if (!groups[stay.checkIn]) groups[stay.checkIn] = { checkIns: [], checkOuts: [] };
+        groups[stay.checkIn].checkIns.push(stay);
+      });
+      checkOutStays.forEach(stay => {
+        if (!groups[stay.checkOut]) groups[stay.checkOut] = { checkIns: [], checkOuts: [] };
+        groups[stay.checkOut].checkOuts.push(stay);
       });
 
-      const sortedDates = Object.keys(groups).sort();
-      content.innerHTML = sortedDates.map(date => `
-        <div class="date-group">
-          <div class="date-group-header">${displayDate(date)}</div>
+      const inHouseSection = inHouseStays.length ? `
+        <div class="inhouse-section">
+          <div class="inhouse-section-header">In House</div>
           <div class="cards-grid">
-            ${groups[date].flatMap(s => s.rooms.map((room, i) => renderCard(s, room, i === 0))).join('')}
+            ${inHouseStays.flatMap(s => s.rooms.map((room, i) => renderInHouseCard(s, room, i === 0))).join('')}
           </div>
-        </div>
-      `).join('');
+        </div>` : '';
+
+      const sortedDates = Object.keys(groups).sort();
+      content.innerHTML = inHouseSection + sortedDates.map(date => {
+        const { checkIns: ins, checkOuts: outs } = groups[date];
+        const checkInCards = (ins || []).flatMap(s => s.rooms.map((room, i) => renderCard(s, room, i === 0)));
+        const checkOutCards = (outs || []).flatMap(s => s.rooms.map(room => renderCheckoutCard(s, room)));
+        return `
+          <div class="date-group">
+            <div class="date-group-header">${displayDate(date)}</div>
+            <div class="cards-grid">
+              ${[...checkInCards, ...checkOutCards].join('')}
+            </div>
+          </div>`;
+      }).join('');
 
       // Calendar uses full data set to capture carryover guests
       document.getElementById('calendar').innerHTML = renderCalendar(data, from, to);
@@ -494,11 +543,105 @@
         <span class="card-value">${s.phones.map(p => `<a class="phone-link" href="tel:${p}">${fmtPhone(p)}</a>`).join(', ')}</span>
       </div>`);
 
+    if (s.lastStay) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Last Stay</span>
+        <span class="card-value">${s.lastStay.rooms.map(esc).join(', ')} ${fmtShortDate(s.lastStay.checkIn)}</span>
+      </div>`);
+
     return `
       <div class="${cardClass}" ${cardClick}>
         ${header}
         <div class="card-body">
           ${guestBlock}
+          ${rows.join('')}
+        </div>
+      </div>`;
+  }
+
+  function renderCheckoutCard(s, room) {
+    const cardClass = s.externalId ? 'card card-checkout clickable' : 'card card-checkout';
+    const cardClick = s.externalId
+      ? `onclick="window.open('https://manage.thinkreservations.com/reservations/${s.externalId}','_blank')"`
+      : '';
+    return `
+      <div class="${cardClass}" ${cardClick}>
+        <div class="card-header">
+          <div class="card-room">${esc(room.name)}</div>
+          <span class="checkout-badge">Checking Out</span>
+        </div>
+        <div class="card-body">
+          <div class="guest-name">${esc(s.primaryGuestName)}</div>
+          ${s.additionalGuestName ? `<div class="guest-additional">${esc(s.additionalGuestName)}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderInHouseCard(s, room, isPrimary) {
+    const cardClass = s.externalId ? 'card card-inhouse clickable' : 'card card-inhouse';
+    const cardClick = s.externalId
+      ? `onclick="window.open('https://manage.thinkreservations.com/reservations/${s.externalId}','_blank')"`
+      : '';
+    const returning = isPrimary && s.previousStayCount > 0
+      ? `<span class="returning-badge">Returning &times;${s.previousStayCount}</span>` : '';
+
+    const rows = [];
+    if (isPrimary) {
+      if (s.arrivalTime) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Arrival</span>
+          <span class="card-value"><span class="arrival-badge">${esc(s.arrivalTime)}</span></span>
+        </div>`);
+      if (s.specialAccommodations) rows.push(`
+        <div><span class="tag tag-blue-lt">${esc(s.specialAccommodations)}</span></div>`);
+      if (s.addons && s.addons.length) s.addons.forEach(a => rows.push(`
+        <div><span class="tag tag-rose">${esc(a)}</span></div>`));
+      if (s.dietaryRestrictions) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Dietary</span>
+          <span class="card-value">${esc(s.dietaryRestrictions)}</span>
+        </div>`);
+      if (s.reasonForStay) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Reason</span>
+          <span class="card-value">${esc(s.reasonForStay)}</span>
+        </div>`);
+      if (s.housekeepingNotes) rows.push(`
+        <div class="card-row">
+          <span class="card-label">H-Notes</span>
+          <span class="card-value">${esc(s.housekeepingNotes)}</span>
+        </div>`);
+      if (s.guestNotes) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Notes</span>
+          <span class="card-value">${esc(s.guestNotes)}</span>
+        </div>`);
+      if (s.phones && s.phones.length) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Phone</span>
+          <span class="card-value">${s.phones.map(p => `<a class="phone-link" href="tel:${p}">${fmtPhone(p)}</a>`).join(', ')}</span>
+        </div>`);
+      if (s.lastStay) rows.push(`
+        <div class="card-row">
+          <span class="card-label">Last Stay</span>
+          <span class="card-value">${s.lastStay.rooms.map(esc).join(', ')} ${fmtShortDate(s.lastStay.checkIn)}</span>
+        </div>`);
+    }
+
+    return `
+      <div class="${cardClass}" ${cardClick}>
+        <div class="card-header">
+          <div class="card-room">${esc(room.name)}</div>
+          <span class="inhouse-badge">In House</span>
+        </div>
+        <div class="card-body">
+          <div>
+            <div class="guest-name-row">
+              <div class="guest-name">${esc(s.primaryGuestName)}</div>
+              ${returning}
+            </div>
+            ${s.additionalGuestName ? `<div class="guest-additional">${esc(s.additionalGuestName)}</div>` : ''}
+          </div>
           ${rows.join('')}
         </div>
       </div>`;
@@ -543,6 +686,11 @@
   function esc(s) {
     if (!s) return '';
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtShortDate(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${parseInt(m)}/${parseInt(d)}/${y}`;
   }
 
   function fmtPhone(p) {

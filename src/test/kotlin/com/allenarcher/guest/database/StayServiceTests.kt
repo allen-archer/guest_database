@@ -370,6 +370,26 @@ class StayServiceTests {
     }
 
     @Test
+    fun `getStaysBriefing includes stay that spans entire range`() {
+        stayService.upsertStays(listOf(upsertStayRequest(
+            checkIn = LocalDate.of(2026, 5, 25),
+            checkOut = LocalDate.of(2026, 7, 5)
+        )))
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+        assertEquals(1, results.size)
+    }
+
+    @Test
+    fun `getStaysBriefing does not duplicate stay that spans entire range`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 5, 25), checkOut = LocalDate.of(2026, 7, 5)),
+            upsertStayRequest(externalId = 1002L, checkIn = LocalDate.of(2026, 6, 5), checkOut = LocalDate.of(2026, 6, 10))
+        ))
+        val results = stayService.getStaysBriefing(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30))
+        assertEquals(2, results.size)
+    }
+
+    @Test
     fun `getStaysBriefing returns correct fields`() {
         stayService.upsertStays(listOf(upsertStayRequest(
             checkIn = LocalDate.of(2026, 6, 1),

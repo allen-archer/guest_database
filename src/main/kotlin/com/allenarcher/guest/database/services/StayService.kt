@@ -61,14 +61,17 @@ class StayService(
             .map { it.toResponse() }
 
     @Transactional(readOnly = true)
-    fun getStaysBriefing(from: LocalDate, to: LocalDate): List<StayBriefingResponse> =
-        stayRepository.findByCheckInGreaterThanEqualAndCheckInLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
-            .map { stay ->
-                val previousStays = stay.guest?.let { guest ->
-                    stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, stay.checkIn)
-                } ?: emptyList()
-                stay.toBriefingResponse(previousStays, properties.roomCombos)
-            }
+    fun getStaysBriefing(from: LocalDate, to: LocalDate): List<StayBriefingResponse> {
+        val checkIns = stayRepository.findByCheckInGreaterThanEqualAndCheckInLessThanEqualAndStatus(from, to, StayStatus.SCHEDULED)
+        val checkOuts = stayRepository.findByCheckOutGreaterThanEqualAndCheckOutLessThanEqualAndCheckInBeforeAndStatus(from, to, from, StayStatus.SCHEDULED)
+        val inHouse = stayRepository.findByCheckInBeforeAndCheckOutAfterAndStatus(from, to, StayStatus.SCHEDULED)
+        return (checkIns + checkOuts + inHouse).map { stay ->
+            val previousStays = stay.guest?.let { guest ->
+                stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, stay.checkIn)
+            } ?: emptyList()
+            stay.toBriefingResponse(previousStays, properties.roomCombos)
+        }
+    }
 
     @Transactional(readOnly = true)
     fun getStaysWithoutGuest(): List<StayResponse> =

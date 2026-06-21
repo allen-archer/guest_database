@@ -21,17 +21,13 @@ class SecurityConfig(private val properties: GuestDatabaseProperties) {
 
     @Bean
     fun userDetailsService(encoder: PasswordEncoder): UserDetailsService {
-        val admin = User.builder()
-            .username(properties.adminUser)
-            .password(encoder.encode(properties.adminPassword))
-            .roles("ADMIN", "READER")
-            .build()
-        val reader = User.builder()
-            .username(properties.readerUser)
-            .password(encoder.encode(properties.readerPassword))
-            .roles("READER")
-            .build()
-        return InMemoryUserDetailsManager(admin, reader)
+        val admins = properties.parseUsers(properties.admins).map { (u, p) ->
+            User.builder().username(u).password(encoder.encode(p)).roles("ADMIN", "READER").build()
+        }
+        val readers = properties.parseUsers(properties.readers).map { (u, p) ->
+            User.builder().username(u).password(encoder.encode(p)).roles("READER").build()
+        }
+        return InMemoryUserDetailsManager(admins + readers)
     }
 
     @Bean

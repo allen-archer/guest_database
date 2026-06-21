@@ -8,8 +8,12 @@ import org.springframework.stereotype.Component
 class GuestDatabaseProperties {
     var roomCombos: Map<String, List<String>> = emptyMap()
     var rememberMeKey: String = "changeme-key"
-    var adminUser: String = "admin"
-    var adminPassword: String = "changeme"
-    var readerUser: String = "reader"
-    var readerPassword: String = "changeme"
+    var admins: String = "admin:changeme"
+    var readers: String = "reader:changeme"
+
+    fun parseUsers(csv: String): List<Pair<String, String>> =
+        csv.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map {
+            val parts = it.split(":", limit = 2)
+            parts[0].trim() to parts[1].trim()
+        }
 }
