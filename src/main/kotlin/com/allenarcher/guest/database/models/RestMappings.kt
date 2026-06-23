@@ -74,3 +74,15 @@ fun Guest.toResponse() = GuestResponse(
     emails = emails.map { it.toResponse() },
     addresses = addresses.map { it.toResponse() }
 )
+
+fun Guest.toSearchResponse(previousStayCount: Int, lastStay: LastStayResponse?) = GuestSearchResponse(
+    id = id!!,
+    externalId = externalId,
+    name = name,
+    notes = notes,
+    phones = phones.map { it.toResponse() },
+    emails = emails.map { it.toResponse() },
+    addresses = addresses.map { it.toResponse() },
+    previousStayCount = previousStayCount,
+    lastStay = lastStay
+)

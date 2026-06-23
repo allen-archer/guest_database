@@ -80,6 +80,18 @@ data class GuestResponse(
     val addresses: List<AddressResponse>
 )
 
+data class GuestSearchResponse(
+    val id: Long,
+    val externalId: Long,
+    val name: String,
+    val notes: String?,
+    val phones: List<PhoneResponse>,
+    val emails: List<EmailResponse>,
+    val addresses: List<AddressResponse>,
+    val previousStayCount: Int,
+    val lastStay: LastStayResponse?
+)
+
 data class RoomNights(val name: String, val nights: Int)
 
 data class StayBriefingResponse(

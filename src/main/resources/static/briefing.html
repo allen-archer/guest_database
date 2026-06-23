@@ -39,10 +39,34 @@
       border-bottom: 2px solid var(--accent);
       padding: 1.25rem 2rem;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+      border: 1px solid transparent;
+    }
+
+    nav a:hover {
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    nav a.active {
+      color: var(--accent-lt);
+      border-color: var(--border);
     }
 
     .date-controls {
@@ -359,6 +383,10 @@
 <body>
 
 <header>
+  <nav>
+    <a href="/briefing.html" class="active">Briefing</a>
+    <a href="/search.html">Search</a>
+  </nav>
   <div class="date-controls">
     <label for="fromDate">From</label>
     <input type="date" id="fromDate">

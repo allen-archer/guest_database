@@ -30,6 +30,38 @@ class GuestService(
         return GuestHistoryResponse(previousStayCount = stays.size, lastStay = lastStay)
     }
 
+    @Transactional(readOnly = true)
+    fun searchGuests(
+        name: String?,
+        email: String?,
+        city: String?,
+        state: String?,
+        street: String?,
+        phone: String?,
+        zip: String?
+    ): List<GuestSearchResponse> {
+        val digits = phone?.replace(Regex("[^0-9]"), "")?.takeIf { it.isNotEmpty() }
+        return guestRepository.searchGuests(
+            name = name?.takeIf { it.isNotBlank() },
+            email = email?.takeIf { it.isNotBlank() },
+            city = city?.takeIf { it.isNotBlank() },
+            state = state?.takeIf { it.isNotBlank() },
+            street = street?.takeIf { it.isNotBlank() },
+            phone = digits,
+            zip = zip?.takeIf { it.isNotBlank() }
+        ).map { guest ->
+            val stays = stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, LocalDate.now())
+            val lastStay = stays.firstOrNull()?.let {
+                LastStayResponse(
+                    rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
+                    checkIn = it.checkIn,
+                    checkOut = it.checkOut
+                )
+            }
+            guest.toSearchResponse(stays.size, lastStay)
+        }
+    }
+
     fun clear() {
         guestRepository.deleteAll()
     }

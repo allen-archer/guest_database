@@ -23,6 +23,17 @@ class Controller(
     fun getGuestHistory(@PathVariable externalId: Long): GuestHistoryResponse =
         guestService.getGuestHistory(externalId)
 
+    @GetMapping("/guests/search")
+    fun searchGuests(
+        @RequestParam name: String?,
+        @RequestParam email: String?,
+        @RequestParam city: String?,
+        @RequestParam state: String?,
+        @RequestParam street: String?,
+        @RequestParam phone: String?,
+        @RequestParam zip: String?
+    ): List<GuestSearchResponse> = guestService.searchGuests(name, email, city, state, street, phone, zip)
+
     @PostMapping("/stays/upsert")
     fun upsertStays(@RequestBody requests: List<UpsertStayRequest>): List<StayResponse> =
         stayService.upsertStays(requests)

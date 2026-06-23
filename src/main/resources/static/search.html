@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Search</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #111827;
+      --surface:  #1e2d45;
+      --card:     #243350;
+      --card-hdr: #162038;
+      --border:   #2a3f5f;
+      --accent:   #60a5fa;
+      --accent-lt:#93c5fd;
+      --text:     #e2e8f0;
+      --muted:    #6b7fa3;
+      --rose:     #f43f5e;
+      --green:    #34d399;
+      --card-txt: #e2e8f0;
+      --card-sub: #94a3b8;
+      --card-sep: #2a3f5f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto Slab', Rockwell, 'Courier New', serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+      border: 1px solid transparent;
+    }
+
+    nav a:hover {
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    nav a.active {
+      color: var(--accent-lt);
+      border-color: var(--border);
+    }
+
+    .search-form {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .search-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .search-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .search-field label {
+      font-size: 0.8rem;
+      line-height: 1;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .search-field input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.4rem 0.6rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 3px;
+      width: 160px;
+    }
+
+    .search-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .search-field.wide input {
+      width: 220px;
+    }
+
+    .search-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .search-actions button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 0.45rem 1rem;
+      font-family: inherit;
+      font-size: 1rem;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      font-weight: bold;
+    }
+
+    .search-actions button:hover { background: var(--accent-lt); }
+
+    .search-actions button.clear-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .search-actions button.clear-btn:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    #status.error { color: #fca5a5; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      color: var(--card-txt);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card.clickable {
+      cursor: pointer;
+    }
+
+    .card.clickable:hover {
+      outline: 2px solid var(--accent);
+    }
+
+    .card-header {
+      background: var(--card-hdr);
+      border-bottom: 2px solid var(--accent);
+      padding: 0.7rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guest-name {
+      font-size: 1.05rem;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      color: var(--accent-lt);
+    }
+
+    .card-body {
+      padding: 0.85rem 1rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .card-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+      font-size: 0.95rem;
+    }
+
+    .card-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--card-txt);
+      flex-shrink: 0;
+      min-width: 70px;
+    }
+
+    .card-value {
+      color: var(--accent-lt);
+      word-break: break-word;
+    }
+
+    .card-value.muted { color: var(--card-sub); }
+
+    .address-block {
+      font-size: 0.95rem;
+      color: var(--accent-lt);
+      line-height: 1.5;
+    }
+
+    .phone-link {
+      color: var(--accent-lt);
+      text-decoration: none;
+    }
+
+    .phone-link:hover { text-decoration: underline; }
+
+    .no-results {
+      text-align: center;
+      padding: 4rem;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .result-count {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="/briefing.html">Briefing</a>
+    <a href="/search.html" class="active">Search</a>
+  </nav>
+  <form class="search-form" onsubmit="search(event)" autocomplete="off">
+    <div class="search-fields">
+      <div class="search-field wide">
+        <label for="q-name">Name</label>
+        <input type="text" id="q-name" placeholder="Some Name" data-lpignore="true">
+      </div>
+      <div class="search-field wide">
+        <label for="q-email">Email</label>
+        <input type="text" id="q-email" placeholder="some@email.com" data-lpignore="true">
+      </div>
+      <div class="search-field">
+        <label for="q-phone">Phone</label>
+        <input type="text" id="q-phone" placeholder="8008675309" style="width:110px" data-lpignore="true">
+      </div>
+      <div class="search-field wide">
+        <label for="q-street">Address</label>
+        <input type="text" id="q-street" placeholder="123 Some St" data-lpignore="true">
+      </div>
+      <div class="search-field">
+        <label for="q-city">City</label>
+        <input type="text" id="q-city" placeholder="Somewhere" data-lpignore="true">
+      </div>
+      <div class="search-field">
+        <label for="q-state">State</label>
+        <input type="text" id="q-state" placeholder="PA" maxlength="2" style="width:50px" data-lpignore="true">
+      </div>
+      <div class="search-field">
+        <label for="q-zip">Zip</label>
+        <input type="text" id="q-zip" placeholder="12345" maxlength="5" style="width:70px" data-lpignore="true">
+      </div>
+    </div>
+    <div class="search-actions">
+      <button type="submit">Search</button>
+      <button type="button" class="clear-btn" onclick="clearSearch()">Clear</button>
+    </div>
+  </form>
+</header>
+
+<main>
+  <div id="status">Enter search criteria above.</div>
+  <div id="content"></div>
+</main>
+
+<script>
+  function search(e) {
+    if (e) e.preventDefault();
+
+    const name   = document.getElementById('q-name').value.trim();
+    const email  = document.getElementById('q-email').value.trim();
+    const phone  = document.getElementById('q-phone').value.trim();
+    const street = document.getElementById('q-street').value.trim();
+    const city   = document.getElementById('q-city').value.trim();
+    const state  = document.getElementById('q-state').value.trim();
+    const zip    = document.getElementById('q-zip').value.trim();
+
+    if (!name && !email && !phone && !street && !city && !state && !zip) {
+      showStatus('Enter at least one search field.');
+      document.getElementById('content').innerHTML = '';
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (name)   params.set('name', name);
+    if (email)  params.set('email', email);
+    if (phone)  params.set('phone', phone);
+    if (street) params.set('street', street);
+    if (city)   params.set('city', city);
+    if (state)  params.set('state', state);
+    if (zip)    params.set('zip', zip);
+
+    showStatus('Searching...');
+    document.getElementById('content').innerHTML = '';
+
+    fetch(`/guests/search?${params}`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(renderResults)
+      .catch(err => showStatus(`Failed to search: ${err.message}`, true));
+  }
+
+  function clearSearch() {
+    ['q-name','q-email','q-phone','q-street','q-city','q-state', 'q-zip'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    showStatus('Enter search criteria above.');
+    document.getElementById('content').innerHTML = '';
+  }
+
+  function renderResults(guests) {
+    const status = document.getElementById('status');
+    const content = document.getElementById('content');
+
+    if (!guests.length) {
+      status.style.display = 'block';
+      status.textContent = 'No results found.';
+      status.className = '';
+      content.innerHTML = '';
+      return;
+    }
+
+    status.style.display = 'none';
+    content.innerHTML = `
+      <div class="result-count">${guests.length} result${guests.length !== 1 ? 's' : ''} found</div>
+      <div class="cards-grid">
+        ${guests.map(renderCard).join('')}
+      </div>`;
+  }
+
+  function renderCard(g) {
+    const rows = [];
+
+    if (g.notes) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Notes</span>
+        <span class="card-value muted">${esc(g.notes)}</span>
+      </div>`);
+
+    if (g.phones.length) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Phone</span>
+        <span class="card-value">${g.phones.map(p => `<a class="phone-link" href="tel:${p.number}">${fmtPhone(p.number)}</a>`).join('<br>')}</span>
+      </div>`);
+
+    if (g.emails.length) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Email</span>
+        <span class="card-value">${g.emails.map(e => esc(e.address)).join('<br>')}</span>
+      </div>`);
+
+    if (g.addresses.length) {
+      g.addresses.forEach(a => rows.push(`
+        <div class="card-row">
+          <span class="card-label">Address</span>
+          <div class="address-block">
+            ${esc(a.street)}<br>
+            ${esc(a.city)}, ${esc(a.state)} ${esc(a.zip)}
+          </div>
+        </div>`));
+    }
+
+    rows.push(`
+      <div class="card-row">
+        <span class="card-label">Stays</span>
+        <span class="card-value">${g.previousStayCount}</span>
+      </div>`);
+
+    if (g.lastStay) rows.push(`
+      <div class="card-row">
+        <span class="card-label">Last Stay</span>
+        <span class="card-value">${g.lastStay.rooms.map(esc).join(', ')} ${fmtShortDate(g.lastStay.checkIn)}</span>
+      </div>`);
+
+    return `
+      <div class="card clickable" onclick="window.open('https://manage.thinkreservations.com/customers/${g.externalId}','_blank')">
+        <div class="card-header">
+          <div class="guest-name">${esc(g.name)}</div>
+        </div>
+        <div class="card-body">
+          ${rows.join('')}
+        </div>
+      </div>`;
+  }
+
+  function showStatus(msg, isError = false) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = isError ? 'error' : '';
+    el.style.display = 'block';
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtShortDate(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${parseInt(m)}/${parseInt(d)}/${y}`;
+  }
+
+  function fmtPhone(p) {
+    let d = p.replace(/\D/g,'');
+    if (d.length === 11 && d[0] === '1') d = d.slice(1);
+    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    return p;
+  }
+</script>
+</body>
+</html>

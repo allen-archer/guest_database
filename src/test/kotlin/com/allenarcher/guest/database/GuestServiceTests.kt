@@ -140,4 +140,120 @@ class GuestServiceTests {
         assertEquals(emptyList<EmailResponse>(), response.emails)
         assertEquals(emptyList<AddressResponse>(), response.addresses)
     }
+
+    private fun search(
+        name: String? = null,
+        email: String? = null,
+        city: String? = null,
+        state: String? = null,
+        street: String? = null,
+        phone: String? = null,
+        zip: String? = null
+    ) = guestService.searchGuests(name, email, city, state, street, phone, zip)
+
+    @Test
+    fun `searchGuests by name returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(name = "Alice").size)
+    }
+
+    @Test
+    fun `searchGuests by name is case insensitive`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(name = "alice").size)
+    }
+
+    @Test
+    fun `searchGuests by name partial match`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(name = "lic").size)
+    }
+
+    @Test
+    fun `searchGuests by email returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(email = "alice@example.com").size)
+    }
+
+    @Test
+    fun `searchGuests by email partial match`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(email = "example").size)
+    }
+
+    @Test
+    fun `searchGuests by phone full number`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(phone = "5551000001").size)
+    }
+
+    @Test
+    fun `searchGuests by phone partial digits`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(phone = "1000").size)
+    }
+
+    @Test
+    fun `searchGuests by phone strips non-digits from input`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(phone = "555-100-0001").size)
+    }
+
+    @Test
+    fun `searchGuests by city returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(city = "Springfield").size)
+    }
+
+    @Test
+    fun `searchGuests by city is case insensitive`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(city = "springfield").size)
+    }
+
+    @Test
+    fun `searchGuests by state returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(state = "IL").size)
+    }
+
+    @Test
+    fun `searchGuests by state is case insensitive`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(state = "il").size)
+    }
+
+    @Test
+    fun `searchGuests by street returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(street = "123 Main").size)
+    }
+
+    @Test
+    fun `searchGuests by zip returns matching guest`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(1, search(zip = "62701").size)
+    }
+
+    @Test
+    fun `searchGuests multiple criteria narrows results`() {
+        guestService.createGuest(fullRequest())
+        guestService.createGuest(CreateGuestRequest("Bob", 9002L,
+            addresses = listOf(AddressRequest("456 Oak Ave", "Springfield", "IL", "62702", "US"))))
+        val results = search(name = "Alice", city = "Springfield")
+        assertEquals(1, results.size)
+        assertEquals("Alice", results[0].name)
+    }
+
+    @Test
+    fun `searchGuests returns empty when no match`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(0, search(name = "Nonexistent").size)
+    }
+
+    @Test
+    fun `searchGuests returns empty when one criterion does not match`() {
+        guestService.createGuest(fullRequest())
+        assertEquals(0, search(name = "Alice", city = "Nonexistent City").size)
+    }
 }
