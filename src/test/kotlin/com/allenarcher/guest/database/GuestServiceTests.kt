@@ -39,7 +39,7 @@ class GuestServiceTests {
                 stateTax = BigDecimal("0.06"),
                 countyTax = BigDecimal("0.01")
             ),
-            guest = UpsertGuestData(externalId = guestExternalId, name = "Alice Smith")
+            guest = CreateGuestRequest(name = "Alice Smith", externalId = guestExternalId)
         )))
     }
 

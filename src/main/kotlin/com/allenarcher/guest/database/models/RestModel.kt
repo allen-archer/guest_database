@@ -30,7 +30,7 @@ data class UpsertStayRequest(
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val invoice: CreateInvoiceRequest,
-    val guest: UpsertGuestData? = null
+    val guest: CreateGuestRequest? = null
 )
 
 data class UpsertByConfirmationRequest(
@@ -39,15 +39,6 @@ data class UpsertByConfirmationRequest(
     val checkIn: LocalDate,
     val checkOut: LocalDate,
     val invoice: CreateInvoiceRequest
-)
-
-data class UpsertGuestData(
-    val externalId: Long,
-    val name: String,
-    val notes: String? = null,
-    val phones: List<PhoneRequest> = emptyList(),
-    val emails: List<EmailRequest> = emptyList(),
-    val addresses: List<AddressRequest> = emptyList()
 )
 
 data class CreateInvoiceRequest(

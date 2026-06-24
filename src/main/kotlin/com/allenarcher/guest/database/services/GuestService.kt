@@ -20,14 +20,7 @@ class GuestService(
     @Transactional(readOnly = true)
     fun getGuestHistory(guestExternalId: Long): GuestHistoryResponse {
         val stays = stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guestExternalId, StayStatus.CANCELED, LocalDate.now())
-        val lastStay = stays.firstOrNull()?.let {
-            LastStayResponse(
-                rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
-                checkIn = it.checkIn,
-                checkOut = it.checkOut
-            )
-        }
-        return GuestHistoryResponse(previousStayCount = stays.size, lastStay = lastStay)
+        return GuestHistoryResponse(previousStayCount = stays.size, lastStay = stays.firstOrNull()?.toLastStayResponse())
     }
 
     @Transactional(readOnly = true)
@@ -51,14 +44,7 @@ class GuestService(
             zip = zip?.takeIf { it.isNotBlank() }
         ).map { guest ->
             val stays = stayRepository.findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guest.externalId, StayStatus.CANCELED, LocalDate.now())
-            val lastStay = stays.firstOrNull()?.let {
-                LastStayResponse(
-                    rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
-                    checkIn = it.checkIn,
-                    checkOut = it.checkOut
-                )
-            }
-            guest.toSearchResponse(stays.size, lastStay)
+            guest.toSearchResponse(stays.size, stays.firstOrNull()?.toLastStayResponse())
         }
     }
 

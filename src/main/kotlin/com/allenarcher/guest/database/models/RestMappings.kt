@@ -2,6 +2,8 @@ package com.allenarcher.guest.database.models
 
 import java.time.temporal.ChronoUnit
 
+private const val ROOM_TYPE = "Room"
+
 fun Stay.toResponse() = StayResponse(
     id = id!!,
     externalId = externalId,
@@ -35,6 +37,12 @@ fun Email.toResponse() = EmailResponse(address = address, addedAt = addedAt)
 
 fun Address.toResponse() = AddressResponse(street = street, city = city, state = state, zip = zip, country = country, addedAt = addedAt)
 
+fun Stay.toLastStayResponse() = LastStayResponse(
+    rooms = invoice?.items?.filter { it.type == ROOM_TYPE }?.mapNotNull { it.name }?.distinct() ?: emptyList(),
+    checkIn = checkIn,
+    checkOut = checkOut
+)
+
 fun Stay.toBriefingResponse(previousStays: List<Stay>, roomCombos: Map<String, List<String>> = emptyMap()) = StayBriefingResponse(
     externalId = externalId,
     primaryGuestName = primaryGuestName,
@@ -47,22 +55,16 @@ fun Stay.toBriefingResponse(previousStays: List<Stay>, roomCombos: Map<String, L
     checkIn = checkIn,
     checkOut = checkOut,
     nights = ChronoUnit.DAYS.between(checkIn, checkOut),
-    rooms = invoice?.items?.filter { it.type == "Room" }
+    rooms = invoice?.items?.filter { it.type == ROOM_TYPE }
         ?.groupBy { it.name }
         ?.mapNotNull { (name, items) -> name?.let { RoomNights(it, items.size) } }
         ?.flatMap { rn -> roomCombos[rn.name.lowercase()]?.map { RoomNights(it, rn.nights) } ?: listOf(rn) }
         ?: emptyList(),
-    addons = invoice?.items?.filter { it.type != "Room" }?.map { it.type } ?: emptyList(),
+    addons = invoice?.items?.filter { it.type != ROOM_TYPE }?.map { it.type } ?: emptyList(),
     guestNotes = guest?.notes,
     phones = guest?.phones?.map { it.number } ?: emptyList(),
     previousStayCount = previousStays.size,
-    lastStay = previousStays.firstOrNull()?.let {
-        LastStayResponse(
-            rooms = it.invoice?.items?.filter { item -> item.type == "Room" }?.mapNotNull { item -> item.name }?.distinct() ?: emptyList(),
-            checkIn = it.checkIn,
-            checkOut = it.checkOut
-        )
-    }
+    lastStay = previousStays.firstOrNull()?.toLastStayResponse()
 )
 
 fun Guest.toResponse() = GuestResponse(

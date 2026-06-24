@@ -36,7 +36,7 @@ class StayServiceTests {
         checkIn: LocalDate,
         checkOut: LocalDate,
         roomName: String = "Jade Vine Suite",
-        guest: UpsertGuestData? = null
+        guest: CreateGuestRequest? = null
     ) = UpsertStayRequest(
         externalId = externalId,
         confirmationCode = confirmationCode,
@@ -51,9 +51,9 @@ class StayServiceTests {
         guest = guest
     )
 
-    private fun fullGuestData(externalId: Long = 5001L) = UpsertGuestData(
-        externalId = externalId,
+    private fun fullGuestData(externalId: Long = 5001L) = CreateGuestRequest(
         name = "Alice Smith",
+        externalId = externalId,
         notes = "Prefers extra towels",
         phones = listOf(PhoneRequest("555-100-0001")),
         emails = listOf(EmailRequest("alice@example.com")),
