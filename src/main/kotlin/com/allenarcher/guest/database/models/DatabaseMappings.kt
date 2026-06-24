@@ -1,14 +1,5 @@
 package com.allenarcher.guest.database.models
 
-fun UpsertGuestData.toDatabase() = Guest(
-    externalId = externalId,
-    name = name,
-    notes = notes,
-    phones = phones.map { it.toDatabase() }.toMutableList(),
-    emails = emails.map { it.toDatabase() }.toMutableList(),
-    addresses = addresses.map { it.toDatabase() }.toMutableList()
-)
-
 fun CreateGuestRequest.toDatabase() = Guest(
     externalId = externalId,
     name = name,

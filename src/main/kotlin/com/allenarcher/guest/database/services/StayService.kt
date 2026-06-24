@@ -31,12 +31,7 @@ class StayService(
             stay.reasonForStay = request.reasonForStay
             stay.checkIn = request.checkIn
             stay.checkOut = request.checkOut
-            stay.invoice?.also {
-                it.stateTax = request.invoice.stateTax
-                it.countyTax = request.invoice.countyTax
-                it.items.clear()
-                it.items.addAll(request.invoice.items.map { item -> item.toDatabase() })
-            } ?: run { stay.invoice = request.invoice.toDatabase(stay) }
+            stay.applyInvoice(request.invoice)
             request.guest?.let { guestData ->
                 val guest = guestRepository.findByExternalId(guestData.externalId)
                     ?.also { // If guest was found in the database, use it and update it with any new data
@@ -82,20 +77,19 @@ class StayService(
         val existing = stayRepository.findByConfirmationCode(request.confirmationCode)
             ?: return stayRepository.save(request.toDatabase()).toResponse()
 
-        val requestItems = request.invoice.items.map { it.toDatabase() }
         val inv = existing.invoice
         val changed = existing.primaryGuestName != request.primaryGuestName ||
             existing.checkIn != request.checkIn ||
             existing.checkOut != request.checkOut ||
-            inv == null || inv.stateTax != request.invoice.stateTax || inv.countyTax != request.invoice.countyTax || inv.items != requestItems
+            inv == null || inv.stateTax != request.invoice.stateTax || inv.countyTax != request.invoice.countyTax ||
+            inv.items != request.invoice.items.map { it.toDatabase() }
 
         if (!changed) return existing.toResponse()
 
         existing.primaryGuestName = request.primaryGuestName
         existing.checkIn = request.checkIn
         existing.checkOut = request.checkOut
-        inv?.also { it.stateTax = request.invoice.stateTax; it.countyTax = request.invoice.countyTax; it.items.clear(); it.items.addAll(requestItems) }
-            ?: run { existing.invoice = request.invoice.toDatabase(existing) }
+        existing.applyInvoice(request.invoice)
 
         return stayRepository.save(existing).toResponse()
     }
@@ -104,14 +98,8 @@ class StayService(
     fun updateInvoice(request: UpdateInvoiceRequest): StayResponse {
         val stay = stayRepository.findByConfirmationCode(request.confirmationId)
             ?: throw IllegalArgumentException("Stay not found: confirmationId=${request.confirmationId}")
-        val items = request.invoice.items.map { it.toDatabase() }
-        stay.invoice?.also {
-            it.stateTax = request.invoice.stateTax
-            it.countyTax = request.invoice.countyTax
-            it.items.clear()
-            it.items.addAll(items)
-        } ?: run { stay.invoice = request.invoice.toDatabase(stay) }
-        val dates = items.map { it.date }
+        stay.applyInvoice(request.invoice)
+        val dates = stay.invoice!!.items.map { it.date }
         stay.checkIn = dates.min()
         stay.checkOut = dates.max().plusDays(1)
         return stayRepository.save(stay).toResponse()
@@ -135,5 +123,14 @@ class StayService(
 
     fun clear() {
         stayRepository.deleteAll()
+    }
+
+    private fun Stay.applyInvoice(req: CreateInvoiceRequest) {
+        invoice?.also {
+            it.stateTax = req.stateTax
+            it.countyTax = req.countyTax
+            it.items.clear()
+            it.items.addAll(req.items.map { item -> item.toDatabase() })
+        } ?: run { invoice = req.toDatabase(this) }
     }
 }
