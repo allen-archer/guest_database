@@ -682,6 +682,19 @@ class StayServiceTests {
         assertEquals(setOf("Dogwood Suite", "Maple Suite"), results.map { it.room }.toSet())
     }
 
+    @Test
+    fun `getLastStaysByRoom prefers individual room stay over older combo stay`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, primaryGuestName = "Old Combo", checkIn = LocalDate.of(2025, 1, 1), checkOut = LocalDate.of(2025, 1, 5), roomName = "Dogwood-Maple Suite"),
+            upsertStayRequest(externalId = 1002L, primaryGuestName = "New Individual", checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Dogwood Suite")
+        ))
+        val results = stayService.getLastStaysByRoom()
+        val dogwood = results.first { it.room == "Dogwood Suite" }
+        val maple = results.first { it.room == "Maple Suite" }
+        assertEquals("New Individual", dogwood.primaryGuestName)
+        assertEquals("Old Combo", maple.primaryGuestName)
+    }
+
     private fun confirmationRequest(
         confirmationCode: String = "CONF001",
         primaryGuestName: String = "Alice",

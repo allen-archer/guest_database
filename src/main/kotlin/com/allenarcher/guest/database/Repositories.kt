@@ -75,6 +75,7 @@ interface StayRepository : JpaRepository<Stay, Long> {
               AND s2.check_out <= :checkOut
             GROUP BY ii2.name
           )
+        ORDER BY s.check_out DESC
     """, nativeQuery = true)
     fun findLastStayPerRoom(@Param("status") status: String, @Param("checkOut") checkOut: LocalDate): List<Stay>
 }
