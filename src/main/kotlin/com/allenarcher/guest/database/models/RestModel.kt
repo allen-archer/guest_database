@@ -155,3 +155,15 @@ data class AddressResponse(
     val country: String,
     val addedAt: LocalDate
 )
+
+data class LastByRoomResponse(
+    val room: String,
+    val externalId: Long?,
+    val primaryGuestName: String,
+    val additionalGuestName: String?,
+    val checkIn: LocalDate,
+    val checkOut: LocalDate,
+    val nights: Long,
+    val guestNotes: String?,
+    val dietaryRestrictions: String?
+)

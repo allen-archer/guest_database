@@ -65,6 +65,9 @@ class Controller(
     fun cancelStay(@RequestBody rooms: List<RoomDateRequest>): StayResponse =
         stayService.cancelStay(rooms)
 
+    @GetMapping("/stays/last-by-room")
+    fun getLastStaysByRoom(): List<LastByRoomResponse> = stayService.getLastStaysByRoom()
+
     @PostMapping("/database/backup")
     fun backup(): String = backupService.backup()
 }

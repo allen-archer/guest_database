@@ -7,6 +7,7 @@ import com.allenarcher.guest.database.models.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 @Service
 class StayService(
@@ -119,6 +120,24 @@ class StayService(
             } ?: throw IllegalArgumentException("No stay found with room nights exactly matching: $requestedCounts")
         stay.status = StayStatus.CANCELED
         return stayRepository.save(stay).toResponse()
+    }
+
+    @Transactional(readOnly = true)
+    fun getLastStaysByRoom(): List<LastByRoomResponse> {
+        val stays = stayRepository.findByStatusNotAndCheckOutLessThanEqualOrderByCheckOutDesc(StayStatus.CANCELED, LocalDate.now())
+        val seen = mutableSetOf<String>()
+        val result = mutableListOf<LastByRoomResponse>()
+        for (stay in stays) {
+            val rooms = stay.invoice?.items?.filter { it.type == "Room" }?.mapNotNull { it.name }?.distinct() ?: continue
+            val expanded = rooms.flatMap { properties.roomCombos[it.lowercase()] ?: listOf(it) }
+            for (room in expanded) {
+                if (seen.add(room)) {
+                    result.add(LastByRoomResponse(room, stay.externalId, stay.primaryGuestName, stay.additionalGuestName, stay.checkIn, stay.checkOut,
+                        ChronoUnit.DAYS.between(stay.checkIn, stay.checkOut), stay.guest?.notes, stay.dietaryRestrictions))
+                }
+            }
+        }
+        return result.sortedBy { it.room }
     }
 
     fun clear() {

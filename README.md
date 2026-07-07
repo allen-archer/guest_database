@@ -78,6 +78,7 @@ Multiple users per role: `GUEST_DB_ADMINS=alice:pass1,bob:pass2`
 | `POST` | `/stays/cancel` | Cancel a stay by matching room names and check-in date |
 | `GET` | `/stays?from=&to=` | Get stays within a date range |
 | `GET` | `/stays/briefing?from=&to=` | Get a summary of scheduled stays in a date range |
+| `GET` | `/stays/last-by-room` | Get the most recent past stay for each room |
 | `GET` | `/stays/without-guest` | Get stays not yet linked to a guest profile |
 | `POST` | `/guests` | Create a guest manually |
 | `GET` | `/guests/{externalId}/history` | Get a guest's stay count and last stay details |
@@ -90,6 +91,7 @@ Two browser UIs are served as static pages:
 
 - `/briefing.html` — daily guest briefing view, showing check-ins, check-outs, and in-house guests for a date range
 - `/search.html` — guest search page
+- `/last_stays.html` — most recent past stay per room
 
 ## Configuration
 

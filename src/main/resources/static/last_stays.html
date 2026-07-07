@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Last Stays</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #111827;
+      --surface:  #1e2d45;
+      --card:     #243350;
+      --card-hdr: #162038;
+      --border:   #2a3f5f;
+      --accent:   #60a5fa;
+      --accent-lt:#93c5fd;
+      --text:     #e2e8f0;
+      --muted:    #6b7fa3;
+      --card-txt: #e2e8f0;
+      --card-sub: #94a3b8;
+      --green:    #34d399;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto Slab', Rockwell, 'Courier New', serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--accent);
+      padding: 1.25rem 2rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+      border: 1px solid transparent;
+    }
+
+    nav a:hover { color: var(--text); border-color: var(--border); }
+    nav a.active { color: var(--accent-lt); border-color: var(--border); }
+
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    #status {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    #status.error { color: #fca5a5; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .card.clickable { cursor: pointer; }
+    .card.clickable:hover { outline: 2px solid var(--accent); }
+
+    .card-header {
+      background: var(--card-hdr);
+      border-bottom: 2px solid var(--accent);
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-room {
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      color: var(--accent-lt);
+    }
+
+    .card-body {
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .guest-name {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--card-txt);
+    }
+
+    .guest-additional {
+      font-size: 1rem;
+      color: var(--card-sub);
+    }
+
+    .card-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: baseline;
+      font-size: 1rem;
+    }
+
+    .card-label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--card-txt);
+      flex-shrink: 0;
+      min-width: 75px;
+    }
+
+    .card-value { color: var(--accent-lt); }
+
+    .card-nights {
+      font-size: 0.88rem;
+      background: var(--green);
+      color: #111;
+      padding: 0.15rem 0.55rem;
+      border-radius: 10px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="/briefing.html">Briefing</a>
+    <a href="/search.html">Search</a>
+    <a href="/last_stays.html" class="active">Last Stays</a>
+  </nav>
+</header>
+
+<main>
+  <div id="status">Loading...</div>
+  <div id="content"></div>
+</main>
+
+<script>
+  async function loadData() {
+    const status = document.getElementById('status');
+    const content = document.getElementById('content');
+    try {
+      const res = await fetch('/stays/last-by-room');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      status.style.display = 'none';
+      if (!data.length) {
+        content.innerHTML = '<div id="status">No past stays found.</div>';
+        return;
+      }
+      content.innerHTML = `<div class="cards-grid">${data.map(renderCard).join('')}</div>`;
+    } catch (err) {
+      status.textContent = `Failed to load data: ${err.message}`;
+      status.className = 'error';
+    }
+  }
+
+  function renderCard(r) {
+    const cardClass = r.externalId ? 'card clickable' : 'card';
+    const cardClick = r.externalId
+      ? `onclick="window.open('https://manage.thinkreservations.com/reservations/${r.externalId}','_blank')"`
+      : '';
+    return `
+      <div class="${cardClass}" ${cardClick}>
+        <div class="card-header">
+          <div class="card-room">${esc(r.room)}</div>
+          <span class="card-nights">${r.nights} night${r.nights !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="card-body">
+          <div class="guest-name">${esc(r.primaryGuestName)}</div>
+          ${r.additionalGuestName ? `<div class="guest-additional">${esc(r.additionalGuestName)}</div>` : ''}
+          <div class="card-row">
+            <span class="card-label">Check-in</span>
+            <span class="card-value">${fmtDate(r.checkIn)}</span>
+          </div>
+          <div class="card-row">
+            <span class="card-label">Check-out</span>
+            <span class="card-value">${fmtDate(r.checkOut)}</span>
+          </div>
+          ${r.dietaryRestrictions ? `<div class="card-row"><span class="card-label">Dietary</span><span class="card-value">${esc(r.dietaryRestrictions)}</span></div>` : ''}
+          ${r.guestNotes ? `<div class="card-row"><span class="card-label">Notes</span><span class="card-value">${esc(r.guestNotes)}</span></div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function fmtDate(iso) {
+    const [y, m, d] = iso.split('-');
+    return `${parseInt(m)}/${parseInt(d)}/${y}`;
+  }
+
+  loadData();
+</script>
+</body>
+</html>

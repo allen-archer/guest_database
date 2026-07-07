@@ -601,6 +601,87 @@ class StayServiceTests {
         assertEquals(1, count)
     }
 
+    @Test
+    fun `getLastStaysByRoom returns empty when no past stays`() {
+        assertTrue(stayService.getLastStaysByRoom().isEmpty())
+    }
+
+    @Test
+    fun `getLastStaysByRoom returns most recent stay per room`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, primaryGuestName = "Alice", checkIn = LocalDate.of(2026, 5, 1), checkOut = LocalDate.of(2026, 5, 5)),
+            upsertStayRequest(externalId = 1002L, primaryGuestName = "Bob", checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))
+        ))
+        val results = stayService.getLastStaysByRoom()
+        assertEquals(1, results.size)
+        assertEquals("Bob", results[0].primaryGuestName)
+    }
+
+    @Test
+    fun `getLastStaysByRoom excludes canceled stays`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5))
+        ))
+        stayService.cancelStay(listOf(RoomDateRequest(room = "Jade Vine Suite", date = LocalDate.of(2026, 6, 1))))
+        assertTrue(stayService.getLastStaysByRoom().isEmpty())
+    }
+
+    @Test
+    fun `getLastStaysByRoom excludes future stays`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, checkIn = LocalDate.of(2026, 8, 1), checkOut = LocalDate.of(2026, 8, 5))
+        ))
+        assertTrue(stayService.getLastStaysByRoom().isEmpty())
+    }
+
+    @Test
+    fun `getLastStaysByRoom returns correct fields`() {
+        stayService.upsertStays(listOf(UpsertStayRequest(
+            externalId = 1001L,
+            primaryGuestName = "Alice",
+            checkIn = LocalDate.of(2026, 6, 1),
+            checkOut = LocalDate.of(2026, 6, 5),
+            dietaryRestrictions = "Gluten free",
+            invoice = CreateInvoiceRequest(
+                items = listOf(InvoiceItemRequest("Room", "Jade Vine Suite", 1, BigDecimal("150.00"), LocalDate.of(2026, 6, 1))),
+                stateTax = BigDecimal("0.06"),
+                countyTax = BigDecimal("0.01")
+            ),
+            guest = fullGuestData()
+        )))
+        val result = stayService.getLastStaysByRoom()[0]
+        assertEquals("Jade Vine Suite", result.room)
+        assertEquals("Alice", result.primaryGuestName)
+        assertEquals(1001L, result.externalId)
+        assertEquals(LocalDate.of(2026, 6, 1), result.checkIn)
+        assertEquals(LocalDate.of(2026, 6, 5), result.checkOut)
+        assertEquals(4L, result.nights)
+        assertEquals("Prefers extra towels", result.guestNotes)
+        assertEquals("Gluten free", result.dietaryRestrictions)
+    }
+
+    @Test
+    fun `getLastStaysByRoom returns one entry per room sorted by name`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, primaryGuestName = "Alice", checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Jade Vine Suite"),
+            upsertStayRequest(externalId = 1002L, primaryGuestName = "Bob", checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Dogwood Suite")
+        ))
+        val results = stayService.getLastStaysByRoom()
+        assertEquals(2, results.size)
+        assertEquals("Dogwood Suite", results[0].room)
+        assertEquals("Jade Vine Suite", results[1].room)
+    }
+
+    @Test
+    fun `getLastStaysByRoom expands combo rooms`() {
+        stayService.upsertStays(listOf(
+            upsertStayRequest(externalId = 1001L, primaryGuestName = "Alice", checkIn = LocalDate.of(2026, 6, 1), checkOut = LocalDate.of(2026, 6, 5), roomName = "Dogwood-Maple Suite")
+        ))
+        val results = stayService.getLastStaysByRoom()
+        assertEquals(2, results.size)
+        assertEquals(setOf("Dogwood Suite", "Maple Suite"), results.map { it.room }.toSet())
+    }
+
     private fun confirmationRequest(
         confirmationCode: String = "CONF001",
         primaryGuestName: String = "Alice",
