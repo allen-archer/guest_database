@@ -57,5 +57,24 @@ interface StayRepository : JpaRepository<Stay, Long> {
     fun findByCheckInEquals(checkIn: LocalDate): List<Stay>
     fun findByGuest_ExternalIdAndStatusNotAndCheckOutBeforeOrderByCheckInDesc(guestExternalId: Long, status: StayStatus, checkOut: LocalDate): List<Stay>
     fun findByCheckInBeforeAndCheckOutAfterAndStatus(checkIn: LocalDate, checkOut: LocalDate, status: StayStatus): List<Stay>
-    fun findByStatusNotAndCheckOutLessThanEqualOrderByCheckOutDesc(status: StayStatus, checkOut: LocalDate): List<Stay>
+
+    @Query(value = """
+        SELECT DISTINCT s.* FROM stay s
+        INNER JOIN invoice i ON i.stay_id = s.id
+        INNER JOIN invoice_items ii ON ii.invoice_id = i.id
+        WHERE ii.type = 'Room'
+          AND s.status != :status
+          AND s.check_out <= :checkOut
+          AND (ii.name, s.check_out) IN (
+            SELECT ii2.name, MAX(s2.check_out)
+            FROM stay s2
+            INNER JOIN invoice i2 ON i2.stay_id = s2.id
+            INNER JOIN invoice_items ii2 ON ii2.invoice_id = i2.id
+            WHERE ii2.type = 'Room'
+              AND s2.status != :status
+              AND s2.check_out <= :checkOut
+            GROUP BY ii2.name
+          )
+    """, nativeQuery = true)
+    fun findLastStayPerRoom(@Param("status") status: String, @Param("checkOut") checkOut: LocalDate): List<Stay>
 }

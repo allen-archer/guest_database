@@ -124,7 +124,7 @@ class StayService(
 
     @Transactional(readOnly = true)
     fun getLastStaysByRoom(): List<LastByRoomResponse> {
-        val stays = stayRepository.findByStatusNotAndCheckOutLessThanEqualOrderByCheckOutDesc(StayStatus.CANCELED, LocalDate.now())
+        val stays = stayRepository.findLastStayPerRoom(StayStatus.CANCELED.name, LocalDate.now())
         val seen = mutableSetOf<String>()
         val result = mutableListOf<LastByRoomResponse>()
         for (stay in stays) {
