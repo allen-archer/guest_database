@@ -1,0 +1,35 @@
+<configuration>
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH:-./data/logs}/guest-database.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH:-./logs}/guest-database-%d{yyyy-MM}.log</fileNamePattern>
+            <maxHistory>12</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ponytail: root OFF silences Spring/Hibernate/etc. entirely; only our package logs -->
+    <root level="OFF"/>
+
+    <!-- application state (startup, backups, service actions) -> console/journalctl -->
+    <logger name="com.allenarcher.guest.database" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- REST requests (success and failure) -> file -->
+    <logger name="com.allenarcher.guest.database.Controller" level="INFO" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="com.allenarcher.guest.database.ExceptionHandler" level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+</configuration>

@@ -4,6 +4,7 @@ import com.allenarcher.guest.database.models.*
 import com.allenarcher.guest.database.services.BackupService
 import com.allenarcher.guest.database.services.GuestService
 import com.allenarcher.guest.database.services.StayService
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
@@ -15,9 +16,11 @@ class Controller(
     private val guestService: GuestService,
     private val backupService: BackupService
 ) {
+    private val logger = LoggerFactory.getLogger(Controller::class.java)
+
     @PostMapping("/guests")
     fun createGuest(@RequestBody request: CreateGuestRequest): GuestResponse =
-        guestService.createGuest(request)
+        guestService.createGuest(request).also { logger.info("Created guest ${it.name}") }
 
     @GetMapping("/guests/{externalId}/history")
     fun getGuestHistory(@PathVariable externalId: Long): GuestHistoryResponse =
@@ -36,11 +39,12 @@ class Controller(
 
     @PostMapping("/stays/upsert")
     fun upsertStays(@RequestBody requests: List<UpsertStayRequest>): List<StayResponse> =
-        stayService.upsertStays(requests)
+        stayService.upsertStays(requests).also { logger.info("Upserted stays with confirmationCodes = ${it.joinToString(", ") { stay -> "${stay.confirmationCode}" }}") }
 
     @PostMapping("/stays/upsert-by-confirmation")
     fun upsertByConfirmation(@RequestBody request: UpsertByConfirmationRequest): StayResponse =
         stayService.upsertByConfirmation(request)
+            .also { logger.info("Upserted stay by confirmationCode = ${it.confirmationCode}") }
 
     @GetMapping("/stays")
     fun getStays(
@@ -59,11 +63,11 @@ class Controller(
 
     @PostMapping("/stays/update-invoice")
     fun updateInvoice(@RequestBody request: UpdateInvoiceRequest): StayResponse =
-        stayService.updateInvoice(request)
+        stayService.updateInvoice(request).also { logger.info("Updated invoice for stay ${it.confirmationCode}") }
 
     @PostMapping("/stays/cancel")
     fun cancelStay(@RequestBody rooms: List<RoomDateRequest>): StayResponse =
-        stayService.cancelStay(rooms)
+        stayService.cancelStay(rooms).also { logger.info("Cancelled stay with confirmationCode = ${it.confirmationCode}") }
 
     @GetMapping("/stays/last-by-room")
     fun getLastStaysByRoom(): List<LastByRoomResponse> = stayService.getLastStaysByRoom()

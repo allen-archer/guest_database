@@ -117,7 +117,7 @@ class StayService(
                     ?.groupingBy { it.name ?: "" }
                     ?.eachCount() ?: emptyMap()
                 stayCounts == requestedCounts
-            } ?: throw IllegalArgumentException("No stay found with room nights exactly matching: $requestedCounts")
+            } ?: throw IllegalArgumentException("No stay found with room(s) ${requestedCounts.keys.joinToString(", ")} for date(s) ${rooms.map { it.date }.joinToString(", ") }")
         stay.status = StayStatus.CANCELED
         return stayRepository.save(stay).toResponse()
     }

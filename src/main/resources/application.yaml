@@ -12,9 +12,6 @@ spring:
       ddl-auto: update
 server:
   port: 8080
-logging:
-  level:
-    org.hibernate.orm.jdbc.error: ERROR
 guest-database:
   remember-me-key: ${GUEST_DB_REMEMBER_ME_KEY:changeme-key}
   admins: ${GUEST_DB_ADMINS:admin:changeme}
